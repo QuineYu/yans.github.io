@@ -6,23 +6,37 @@
 			"xingcai.2048/texture_00.png"
 		],
 		"Physics": "xingcai.physics3.json",
-		"DisplayInfo": "xingcai.cdi3.json"
+		"DisplayInfo": "xingcai.cdi3.json",
+		"Expressions": [
+			{
+				"Name": "jacket",
+				"File": "expressions/jacket.exp3.json"
+			},
+			{
+				"Name": "skirt1",
+				"File": "expressions/skirt1.exp3.json"
+			},
+			{
+				"Name": "skirt2",
+				"File": "expressions/skirt2.exp3.json"
+			}
+		]
 	},
 	"Groups": [
 		{
 			"Target": "Parameter",
 			"Name": "EyeBlink",
 			"Ids": [
-				"ParamEyeROpen",
-				"ParamEyeRSmile",
-				"ParamEyeBallX",
-				"ParamEyeBallY"
+				"ParamEyeLOpen",
+				"ParamEyeROpen"
 			]
 		},
 		{
 			"Target": "Parameter",
 			"Name": "LipSync",
-			"Ids": []
+			"Ids": [
+				"ParamMouthOpenY"
+			]
 		}
 	]
 }
