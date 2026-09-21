@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星彩 Live2D - AI 智能伴学对话</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #f0f4f8;
+            background-color: #0d1117;
+        }
+
+        /* 全屏背景图片 */
+        .bg-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('../../myimages/background.jpg');
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center;
+            z-index: 0;
+        }
+
+        /* 优雅暗色遮罩，提升文字对比度 */
+        .bg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at center, rgba(10, 15, 29, 0.25) 0%, rgba(5, 8, 16, 0.65) 100%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Live2D WebGL 画布全屏居中 */
+        canvas {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 1 !important;
+            display: block !important;
+            pointer-events: auto !important;
+        }
+
+        /* 顶部导航栏 (玻璃拟态) */
+        .top-navbar {
+            position: fixed;
+            top: 16px;
+            left: 20px;
+            right: 20px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            background: rgba(18, 24, 38, 0.65);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+            z-index: 10;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #e2e8f0;
+            font-size: 14px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.18);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .char-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #ffffff 0%, #a5f3fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+            transition: all 0.3s ease;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: currentColor;
+            box-shadow: 0 0 8px currentColor;
+            animation: pulse-dot 2s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.85); }
+        }
+
+        .status-badge.offline {
+            background: rgba(245, 158, 11, 0.15);
+            border-color: rgba(245, 158, 11, 0.3);
+            color: #fbbf24;
+        }
+
+        .status-badge.speaking {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            padding: 7px 14px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #f1f5f9;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.18);
+            border-color: rgba(0, 242, 254, 0.4);
+            transform: translateY(-1px);
+        }
+
+        /* 聊天主界面容器 */
+        .chat-container {
+            position: fixed;
+            bottom: 110px;
+            right: 24px;
+            width: 440px;
+            max-width: calc(100vw - 48px);
+            height: 480px;
+            max-height: calc(100vh - 200px);
+            background: rgba(15, 23, 42, 0.72);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 20px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 10;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .chat-container.minimized {
+            height: 48px;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            font-size: 13px;
+            color: #94a3b8;
+            cursor: pointer;
+        }
+
+        .chat-header:hover {
+            color: #e2e8f0;
+        }
+
+        .chat-toggle-btn {
+            background: transparent;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* 消息列表 */
+        .messages-list {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            user-select: text;
+        }
+
+        .messages-list::-webkit-scrollbar {
+            width: 5px;
+        }
+        .messages-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.18);
+            border-radius: 4px;
+        }
+
+        .msg-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg-row.user {
+            align-items: flex-end;
+        }
+
+        .msg-row.ai {
+            align-items: flex-start;
+        }
+
+        .msg-bubble {
+            max-width: 86%;
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 14px;
+            line-height: 1.55;
+            word-break: break-word;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+        }
+
+        .msg-row.user .msg-bubble {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: #ffffff;
+            border-bottom-right-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .msg-row.ai .msg-bubble {
+            background: rgba(30, 41, 59, 0.85);
+            color: #f1f5f9;
+            border-bottom-left-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        /* 动作徽章 */
+        .action-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 7px;
+            margin: 2px 3px;
+            border-radius: 6px;
+            font-size: 12px;
+            background: rgba(56, 189, 248, 0.2);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            color: #38bdf8;
+            font-weight: 500;
+        }
+
+        /* 打字机光标 */
+        .cursor-blink {
+            display: inline-block;
+            width: 6px;
+            height: 14px;
+            background-color: #38bdf8;
+            vertical-align: middle;
+            margin-left: 2px;
+            animation: blink 0.8s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* 底部固定输入与快捷操作区 (居中) */
+        .bottom-dock {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 860px;
+            max-width: calc(100vw - 32px);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        /* 快捷动作/问题药丸卡片 */
+        .quick-chips-row {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            scrollbar-width: none;
+        }
+
+        .quick-chips-row::-webkit-scrollbar {
+            display: none;
+        }
+
+        .chip {
+            padding: 6px 13px;
+            border-radius: 20px;
+            background: rgba(18, 24, 38, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #cbd5e1;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .chip:hover {
+            background: rgba(56, 189, 248, 0.25);
+            border-color: rgba(56, 189, 248, 0.5);
+            color: #ffffff;
+            transform: translateY(-2px);
+        }
+
+        /* 输入框底栏 */
+        .input-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 14px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .input-field {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #ffffff;
+            font-size: 15px;
+            padding: 6px 8px;
+            user-select: text;
+        }
+
+        .input-field::placeholder {
+            color: #64748b;
+        }
+
+        .send-btn {
+            padding: 9px 20px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            border: none;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+        }
+
+        .send-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(2, 132, 199, 0.5);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* 动作调试抽屉 / 模态框 */
+        .drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(6px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .drawer-overlay.active {
+            display: flex;
+        }
+
+        .drawer-box {
+            width: 520px;
+            max-width: 90vw;
+            max-height: 85vh;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: modalIn 0.25s ease-out;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .drawer-header {
+            padding: 16px 22px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 20px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .close-btn:hover {
+            color: #ffffff;
+        }
+
+        .drawer-content {
+            padding: 20px 22px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .drawer-section-title {
+            font-size: 13px;
+            color: #38bdf8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 10px 8px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #f1f5f9;
+            font-size: 13px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .action-btn:hover {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: rgba(56, 189, 248, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-label {
+            font-size: 13px;
+            color: #cbd5e1;
+        }
+
+        .form-input, .form-textarea {
+            padding: 10px 14px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            font-size: 14px;
+            outline: none;
+            user-select: text;
+        }
+
+        .form-input:focus, .form-textarea:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+
+        .drawer-footer {
+            padding: 14px 22px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            .top-navbar {
+                left: 10px;
+                right: 10px;
+                padding: 0 12px;
+            }
+            .chat-container {
+                right: 10px;
+                left: 10px;
+                width: auto;
+                bottom: 110px;
+                height: 380px;
+            }
+            .bottom-dock {
+                left: 10px;
+                right: 10px;
+                transform: none;
+                width: auto;
+            }
+        }
+    </style>
+
+    <!-- 配置标志：隐藏 WebGL 内部背景图与齿轮，使画布透明显示 background.jpg -->
+    <script>
+        window.hideLive2DBackground = true;
+        window.hideLive2DGear = true;
+    </script>
+
+    <!-- Live2D Cubism Core & 依赖 -->
+    <script src="https://unpkg.com/core-js-bundle@3.6.1/minified.js"></script>
+    <script src="../../Core/live2dcubismcore.js"></script>
+    <!-- 控制器与动作引擎 -->
+    <script src="./chat_controller.js"></script>
+    <!-- Live2D WebGL 渲染管线 -->
+    <script type="module" crossorigin src="../../assets/index-4PtOunvL.js?v=5"></script>
+</head>
+
+<body>
+    <!-- 背景层 -->
+    <div class="bg-layer"></div>
+    <div class="bg-overlay"></div>
+
+    <!-- 顶部导航栏 -->
+    <header class="top-navbar">
+        <div class="nav-left">
+            <a href="../../study.html" class="back-btn" title="返回笔记目录">
+                <span>←</span> 返回笔记
+            </a>
+            <div class="char-title">
+                <span>星彩 Live2D</span>
+                <span class="status-badge" id="statusBadge">
+                    <span class="status-dot"></span>
+                    <span id="statusText">初始化中...</span>
+                </span>
+            </div>
+        </div>
+
+        <div class="nav-actions">
+            <button class="nav-btn" id="openActionDrawerBtn" title="打开动作测试">
+                <span>🎭</span> 动作调试
+            </button>
+            <button class="nav-btn" id="openSettingsBtn" title="配置本地大模型接口">
+                <span>⚙️</span> 模型设置
+            </button>
+            <button class="nav-btn" id="clearChatBtn" title="清空对话">
+                <span>🧹</span> 清屏
+            </button>
+        </div>
+    </header>
+
+    <!-- 悬浮对话气泡容器 -->
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header" id="chatHeader">
+            <span>💬 对话记录</span>
+            <button class="chat-toggle-btn" id="chatToggleBtn" title="折叠/展开对话">🔽 折叠</button>
+        </div>
+        <div class="messages-list" id="messagesList">
+            <!-- 欢迎消息 -->
+            <div class="msg-row ai">
+                <div class="msg-bubble">
+                    <span class="action-tag">🏷️ 眨眼</span>
+                    <span class="action-tag">🏷️ 微笑</span>
+                    主人好呀！我是您的伴学助手星彩。<br>
+                    我能感知您的输入，并根据对话做出点头、摇头、歪头、脸红害羞等动作哦！您可以在下方输入消息与我交流~
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部固定输入区与快捷指令 -->
+    <div class="bottom-dock">
+        <!-- 快捷药丸按钮 -->
+        <div class="quick-chips-row">
+            <div class="chip" data-prompt="星彩你好呀，打个招呼吧！">👋 打个招呼</div>
+            <div class="chip" data-prompt="星彩今天心情怎么样？">😊 今天心情怎么样？</div>
+            <div class="chip" data-prompt="星彩真可爱，害羞一个给我看看！">😳 害羞一个给我看</div>
+            <div class="chip" data-prompt="星彩换件外套试试看吧！">👗 换一件衣服</div>
+            <div class="chip" data-prompt="星彩眨个单眼卖个萌吧！">✨ 眨眼卖萌</div>
+            <div class="chip" data-prompt="星彩，什么是生命的意义呢？认真思考一下！">🤔 思考哲学问题</div>
+            <div class="chip" data-prompt="哇！星彩今天太棒了吧！">🎉 夸夸她</div>
+        </div>
+
+        <!-- 文本输入栏 -->
+        <div class="input-bar">
+            <input type="text" id="chatInput" class="input-field" placeholder="输入消息与星彩交流... (按 Enter 发送)" autocomplete="off">
+            <button id="sendBtn" class="send-btn">
+                <span>发送</span> 🚀
+            </button>
+        </div>
+    </div>
+
+    <!-- 动作调试模态框 (Drawer) -->
+    <div class="drawer-overlay" id="actionDrawer">
+        <div class="drawer-box">
+            <div class="drawer-header">
+                <span>🎭 Live2D 动作与表情实时调试</span>
+                <button class="close-btn" id="closeActionDrawerBtn">×</button>
+            </div>
+            <div class="drawer-content">
+                <div>
+                    <div class="drawer-section-title">姿态动作驱动</div>
+                    <div class="action-grid">
+                        <button class="action-btn" data-action="点头"><span>🙇</span> 点头 (Nod)</button>
+                        <button class="action-btn" data-action="摇头"><span>🙅</span> 摇头 (Shake)</button>
+                        <button class="action-btn" data-action="歪头"><span>🙋</span> 歪头 (Tilt)</button>
+                        <button class="action-btn" data-action="思考"><span>🤔</span> 思考 (Think)</button>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="drawer-section-title">面部表情与情绪</div>
+                    <div class="action-grid">
+                        <button class="action-btn" data-action="害羞"><span>😳</span> 脸红害羞 (Blush)</button>
+                        <button class="action-btn" data-action="眨眼"><span>😉</span> 眨眼卖萌 (Wink)</button>
+                        <button class="action-btn" data-action="微笑"><span>😊</span> 开心微笑 (Smile)</button>
+                        <button class="action-btn" data-action="惊讶"><span>😮</span> 吃惊惊讶 (Surprise)</button>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="drawer-section-title">换装与对口型测试</div>
+                    <div class="action-grid">
+                        <button class="action-btn" data-action="换衣服"><span>🧥</span> 切换外套 (Jacket)</button>
+                        <button class="action-btn" data-action="裙子1"><span>👗</span> 切换裙子1</button>
+                        <button class="action-btn" data-action="裙子2"><span>👗</span> 切换裙子2</button>
+                        <button class="action-btn" id="testLipSyncBtn"><span>👄</span> 说话口型测试</button>
+                    </div>
+                </div>
+            </div>
+            <div class="drawer-footer">
+                <button class="nav-btn" id="closeActionDrawerConfirmBtn">完成</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 本地大模型设置模态框 -->
+    <div class="drawer-overlay" id="settingsDrawer">
+        <div class="drawer-box">
+            <div class="drawer-header">
+                <span>⚙️ 本地大模型服务设置</span>
+                <button class="close-btn" id="closeSettingsBtn">×</button>
+            </div>
+            <div class="drawer-content">
+                <div class="form-group">
+                    <label class="form-label">API 基础地址 (Base URL)</label>
+                    <input type="text" id="settingBaseUrl" class="form-input" placeholder="http://localhost:11434/v1">
+                    <small style="color:#64748b;font-size:12px;">支持 Ollama (11434/v1), LM Studio (1234/v1), vLLM (8000/v1) 等</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">模型名称 (Model Name)</label>
+                    <input type="text" id="settingModelName" class="form-input" placeholder="qwen2.5:7b">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">API Key (若有)</label>
+                    <input type="password" id="settingApiKey" class="form-input" placeholder="可选，本地服务一般无需输入">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">系统 Prompt (包含动作控制指引)</label>
+                    <textarea id="settingSystemPrompt" class="form-textarea" rows="4"></textarea>
+                </div>
+
+                <div style="display:flex;gap:10px;">
+                    <button class="nav-btn" id="testConnectionBtn">🔍 测试连线与自动发现模型</button>
+                    <span id="testConnResult" style="font-size:13px;align-self:center;"></span>
+                </div>
+            </div>
+            <div class="drawer-footer">
+                <button class="nav-btn" id="resetSettingsBtn">恢复默认</button>
+                <button class="send-btn" id="saveSettingsBtn">保存配置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主交互逻辑脚本 -->
+    <script>
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const messagesList = document.getElementById('messagesList');
+        const statusBadge = document.getElementById('statusBadge');
+        const statusText = document.getElementById('statusText');
+        const chatContainer = document.getElementById('chatContainer');
+        const chatToggleBtn = document.getElementById('chatToggleBtn');
+        const clearChatBtn = document.getElementById('clearChatBtn');
+
+        // 抽屉与设置
+        const actionDrawer = document.getElementById('actionDrawer');
+        const openActionDrawerBtn = document.getElementById('openActionDrawerBtn');
+        const closeActionDrawerBtn = document.getElementById('closeActionDrawerBtn');
+        const closeActionDrawerConfirmBtn = document.getElementById('closeActionDrawerConfirmBtn');
+
+        const settingsDrawer = document.getElementById('settingsDrawer');
+        const openSettingsBtn = document.getElementById('openSettingsBtn');
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        const resetSettingsBtn = document.getElementById('resetSettingsBtn');
+        const testConnectionBtn = document.getElementById('testConnectionBtn');
+        const testConnResult = document.getElementById('testConnResult');
+
+        const settingBaseUrl = document.getElementById('settingBaseUrl');
+        const settingModelName = document.getElementById('settingModelName');
+        const settingApiKey = document.getElementById('settingApiKey');
+        const settingSystemPrompt = document.getElementById('settingSystemPrompt');
+
+        // 对话上下文历史记录
+        let chatHistory = [];
+        let isGenerating = false;
+        let isServerOnline = false;
+
+        // 初始化页面状态
+        window.addEventListener('DOMContentLoaded', async () => {
+            initSettingsForm();
+            await checkServerStatus();
+        });
+
+        function initSettingsForm() {
+            settingBaseUrl.value = window.localLLMClient.baseUrl;
+            settingModelName.value = window.localLLMClient.modelName;
+            settingApiKey.value = window.localLLMClient.apiKey;
+            settingSystemPrompt.value = window.localLLMClient.systemPrompt;
+        }
+
+        async function checkServerStatus() {
+            statusBadge.className = 'status-badge';
+            statusText.innerText = '检测服务...';
+            const res = await window.localLLMClient.checkHealth();
+            if (res.ok) {
+                isServerOnline = true;
+                statusBadge.className = 'status-badge';
+                statusText.innerText = '本地大模型已连接';
+                if (res.models && res.models.length > 0) {
+                    console.log('检测到本地模型列表:', res.models);
+                }
+            } else {
+                isServerOnline = false;
+                statusBadge.className = 'status-badge offline';
+                statusText.innerText = '演示模式 (本地模型离线)';
+            }
+        }
+
+        // 折叠/展开对话框
+        let isChatMinimized = false;
+        chatToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isChatMinimized = !isChatMinimized;
+            if (isChatMinimized) {
+                chatContainer.classList.add('minimized');
+                chatToggleBtn.innerText = '🔼 展开';
+            } else {
+                chatContainer.classList.remove('minimized');
+                chatToggleBtn.innerText = '🔽 折叠';
+            }
+        });
+        document.getElementById('chatHeader').addEventListener('click', () => {
+            chatToggleBtn.click();
+        });
+
+        // 清屏
+        clearChatBtn.addEventListener('click', () => {
+            messagesList.innerHTML = '';
+            chatHistory = [];
+            addAIMessage('对话记录已清空~ 主人有什么新的话题想聊聊吗？', ['微笑']);
+        });
+
+        // 快捷 Chip 药丸点击
+        document.querySelectorAll('.chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const prompt = chip.getAttribute('data-prompt');
+                if (prompt && !isGenerating) {
+                    chatInput.value = prompt;
+                    handleSend();
+                }
+            });
+        });
+
+        // 发送消息流程
+        async function handleSend() {
+            const text = chatInput.value.trim();
+            if (!text || isGenerating) return;
+
+            chatInput.value = '';
+            isGenerating = true;
+            sendBtn.disabled = true;
+
+            // 1. 添加用户气泡
+            addUserMessage(text);
+            chatHistory.push({ role: 'user', content: text });
+
+            // 2. 角色状态：思考中
+            statusBadge.className = 'status-badge speaking';
+            statusText.innerText = '星彩正在思考...';
+            window.live2dMotionEngine.think(2.0);
+
+            // 3. 如果本地模型在线，发起流式调用；否则使用智能演示回退
+            if (isServerOnline) {
+                await sendToLocalLLM();
+            } else {
+                await sendToMockEngine(text);
+            }
+
+            isGenerating = false;
+            sendBtn.disabled = false;
+            if (isServerOnline) {
+                statusBadge.className = 'status-badge';
+                statusText.innerText = '本地大模型已连接';
+            } else {
+                statusBadge.className = 'status-badge offline';
+                statusText.innerText = '演示模式 (本地模型离线)';
+            }
+            window.live2dMotionEngine.setSpeaking(false);
+        }
+
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+            }
+        });
+        sendBtn.addEventListener('click', handleSend);
+
+        // 渲染用户气泡
+        function addUserMessage(text) {
+            const row = document.createElement('div');
+            row.className = 'msg-row user';
+            const bubble = document.createElement('div');
+            bubble.className = 'msg-bubble';
+            bubble.innerText = text;
+            row.appendChild(bubble);
+            messagesList.appendChild(row);
+            scrollChatToBottom();
+        }
+
+        // 格式化文本中的动作标签，替换为发光徽章
+        function formatActionTags(rawText) {
+            return rawText.replace(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|jacket|skirt1|skirt2)\]/gi, (match) => {
+                return `<span class="action-tag">🏷️ ${match.replace(/[\[\]]/g, '')}</span>`;
+            });
+        }
+
+        // 渲染 AI 气泡
+        function addAIMessage(text, initialActions = []) {
+            const row = document.createElement('div');
+            row.className = 'msg-row ai';
+            const bubble = document.createElement('div');
+            bubble.className = 'msg-bubble';
+            bubble.innerHTML = formatActionTags(text);
+            row.appendChild(bubble);
+            messagesList.appendChild(row);
+            scrollChatToBottom();
+
+            if (initialActions) {
+                initialActions.forEach(act => window.live2dMotionEngine.triggerAction(act));
+            }
+        }
+
+        function scrollChatToBottom() {
+            messagesList.scrollTop = messagesList.scrollHeight;
+        }
+
+        // 连接本地大模型
+        async function sendToLocalLLM() {
+            const row = document.createElement('div');
+            row.className = 'msg-row ai';
+            const bubble = document.createElement('div');
+            bubble.className = 'msg-bubble';
+            bubble.innerHTML = '<span class="cursor-blink"></span>';
+            row.appendChild(bubble);
+            messagesList.appendChild(row);
+
+            let fullContent = '';
+            let parsedTags = new Set();
+            window.live2dMotionEngine.setSpeaking(true);
+            statusText.innerText = '星彩正在回复...';
+
+            await new Promise((resolve) => {
+                window.localLLMClient.chatStream(
+                    chatHistory,
+                    (chunk) => {
+                        fullContent += chunk;
+                        // 扫描未触发的动作标签
+                        const matches = fullContent.match(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|jacket|skirt1|skirt2)\]/gi);
+                        if (matches) {
+                            for (const tag of matches) {
+                                const clean = tag.replace(/[\[\]]/g, '').toLowerCase();
+                                if (!parsedTags.has(clean)) {
+                                    parsedTags.add(clean);
+                                    window.live2dMotionEngine.triggerAction(clean);
+                                }
+                            }
+                        }
+                        bubble.innerHTML = formatActionTags(fullContent) + '<span class="cursor-blink"></span>';
+                        scrollChatToBottom();
+                    },
+                    () => {
+                        // 完成
+                        bubble.innerHTML = formatActionTags(fullContent);
+                        chatHistory.push({ role: 'assistant', content: fullContent });
+                        resolve();
+                    },
+                    (err) => {
+                        console.warn('本地大模型流式传输中断，切换为演示应答:', err);
+                        const fallback = window.localLLMClient.getMockResponse(chatHistory[chatHistory.length - 1].content);
+                        typewriterOutput(bubble, fallback, resolve);
+                    }
+                );
+            });
+        }
+
+        // 演示模式打字机回退
+        async function sendToMockEngine(userText) {
+            const row = document.createElement('div');
+            row.className = 'msg-row ai';
+            const bubble = document.createElement('div');
+            bubble.className = 'msg-bubble';
+            bubble.innerHTML = '<span class="cursor-blink"></span>';
+            row.appendChild(bubble);
+            messagesList.appendChild(row);
+
+            const mockReply = window.localLLMClient.getMockResponse(userText);
+            await new Promise((resolve) => {
+                typewriterOutput(bubble, mockReply, resolve);
+            });
+        }
+
+        function typewriterOutput(bubbleElement, fullText, onFinished) {
+            let index = 0;
+            let currentText = '';
+            let parsedTags = new Set();
+            window.live2dMotionEngine.setSpeaking(true);
+            statusText.innerText = '星彩正在回复...';
+
+            const timer = setInterval(() => {
+                if (index < fullText.length) {
+                    currentText += fullText[index];
+                    index++;
+
+                    // 检测动作标签
+                    const matches = currentText.match(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|jacket|skirt1|skirt2)\]/gi);
+                    if (matches) {
+                        for (const tag of matches) {
+                            const clean = tag.replace(/[\[\]]/g, '').toLowerCase();
+                            if (!parsedTags.has(clean)) {
+                                parsedTags.add(clean);
+                                window.live2dMotionEngine.triggerAction(clean);
+                            }
+                        }
+                    }
+
+                    bubbleElement.innerHTML = formatActionTags(currentText) + '<span class="cursor-blink"></span>';
+                    scrollChatToBottom();
+                } else {
+                    clearInterval(timer);
+                    bubbleElement.innerHTML = formatActionTags(fullText);
+                    chatHistory.push({ role: 'assistant', content: fullText });
+                    onFinished();
+                }
+            }, 40);
+        }
+
+        // ==========================================
+        // 动作测试 Drawer 交互
+        // ==========================================
+        openActionDrawerBtn.addEventListener('click', () => {
+            actionDrawer.classList.add('active');
+        });
+        closeActionDrawerBtn.addEventListener('click', () => {
+            actionDrawer.classList.remove('active');
+        });
+        closeActionDrawerConfirmBtn.addEventListener('click', () => {
+            actionDrawer.classList.remove('active');
+        });
+
+        document.querySelectorAll('.action-btn[data-action]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const act = btn.getAttribute('data-action');
+                if (act) {
+                    window.live2dMotionEngine.triggerAction(act);
+                }
+            });
+        });
+
+        let testLipTimer = null;
+        document.getElementById('testLipSyncBtn').addEventListener('click', () => {
+            if (testLipTimer) {
+                clearTimeout(testLipTimer);
+            }
+            window.live2dMotionEngine.setSpeaking(true);
+            window.live2dMotionEngine.smile(3.0);
+            testLipTimer = setTimeout(() => {
+                window.live2dMotionEngine.setSpeaking(false);
+            }, 3000);
+        });
+
+        // ==========================================
+        // 模型设置 Drawer 交互
+        // ==========================================
+        openSettingsBtn.addEventListener('click', () => {
+            initSettingsForm();
+            testConnResult.innerText = '';
+            settingsDrawer.classList.add('active');
+        });
+        closeSettingsBtn.addEventListener('click', () => {
+            settingsDrawer.classList.remove('active');
+        });
+
+        testConnectionBtn.addEventListener('click', async () => {
+            testConnResult.style.color = '#38bdf8';
+            testConnResult.innerText = '正在测试...';
+            window.localLLMClient.saveSettings({
+                baseUrl: settingBaseUrl.value,
+                modelName: settingModelName.value,
+                apiKey: settingApiKey.value
+            });
+            const res = await window.localLLMClient.checkHealth();
+            if (res.ok) {
+                testConnResult.style.color = '#34d399';
+                testConnResult.innerText = '✅ 连接成功！检测到服务运行中';
+                checkServerStatus();
+            } else {
+                testConnResult.style.color = '#f87171';
+                testConnResult.innerText = '❌ 连接失败: ' + res.error;
+            }
+        });
+
+        saveSettingsBtn.addEventListener('click', async () => {
+            window.localLLMClient.saveSettings({
+                baseUrl: settingBaseUrl.value,
+                modelName: settingModelName.value,
+                apiKey: settingApiKey.value,
+                systemPrompt: settingSystemPrompt.value
+            });
+            settingsDrawer.classList.remove('active');
+            await checkServerStatus();
+        });
+
+        resetSettingsBtn.addEventListener('click', () => {
+            localStorage.removeItem('llm_base_url');
+            localStorage.removeItem('llm_model_name');
+            localStorage.removeItem('llm_api_key');
+            localStorage.removeItem('llm_system_prompt');
+            window.localLLMClient.loadSettings();
+            initSettingsForm();
+            testConnResult.innerText = '已恢复默认设置';
+        });
+
+        // 自动化测试辅助钩子 (如 ?test=action_drawer 或 ?test=settings 或 ?test=chat)
+        const urlParams = new URLSearchParams(window.location.search);
+        const testMode = urlParams.get('test');
+        if (testMode === 'action_drawer') {
+            setTimeout(() => openActionDrawerBtn.click(), 2500);
+        } else if (testMode === 'settings') {
+            setTimeout(() => openSettingsBtn.click(), 2500);
+        } else if (testMode === 'chat') {
+            setTimeout(() => {
+                const chip = document.querySelector('.chip[data-prompt*="害羞"]');
+                if (chip) chip.click();
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
