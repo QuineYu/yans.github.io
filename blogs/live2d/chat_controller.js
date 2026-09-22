@@ -27,9 +27,25 @@ class Live2DMotionEngine {
         this.currentSmile = 0;
         this.targetSmile = 0;
 
-        // 模型位置微调（默认居中）
-        this.modelYOffset = 0.0;
-        this.modelScale = 1.0;
+        // 模型位置微调（默认居中并缩小至 90%）
+        this.modelYOffset = -0.06;
+        this.modelScale = (typeof window !== 'undefined' && typeof window.live2dModelScale === 'number')
+            ? window.live2dModelScale
+            : 0.9;
+        this.layoutAdjusted = false;
+    }
+
+    /**
+     * 动态设置模型缩放比例并应用 (如 0.9 为 90%)
+     */
+    setModelScale(scale) {
+        this.modelScale = scale;
+        if (this.appModel && this.appModel._modelMatrix) {
+            this.appModel._modelMatrix.setHeight(2);
+            this.appModel._modelMatrix.scaleRelative(this.modelScale, this.modelScale);
+            this.appModel._modelMatrix.translateX(0);
+            this.appModel._modelMatrix.translateY(this.modelYOffset);
+        }
     }
 
     /**
@@ -81,9 +97,10 @@ class Live2DMotionEngine {
         const values = modelWrapper._parameterValues;
         if (!values) return;
 
-        // 1. 首次加载时平移微调模型纵向居中位置，避免顶部蝴蝶结贴顶
+        // 1. 首次加载时微调模型缩放到 90% 并纵向居中微调，避免顶部贴顶并留出呼吸空间
         if (!this.layoutAdjusted && appModel && appModel._modelMatrix) {
-            appModel._modelMatrix.translateY(-0.06);
+            appModel._modelMatrix.scaleRelative(this.modelScale, this.modelScale);
+            appModel._modelMatrix.translateY(this.modelYOffset);
             this.layoutAdjusted = true;
         }
 

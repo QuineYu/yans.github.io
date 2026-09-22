@@ -184,6 +184,13 @@
             transform: translateY(-1px);
         }
 
+        .nav-btn.active {
+            background: rgba(56, 189, 248, 0.25);
+            border-color: rgba(56, 189, 248, 0.6);
+            color: #ffffff;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+        }
+
         /* 聊天主界面容器 */
         .chat-container {
             position: fixed;
@@ -433,7 +440,7 @@
             cursor: not-allowed;
         }
 
-        /* 动作调试抽屉 / 模态框 */
+        /* 模态框通用遮罩 (用于设置等对话框) */
         .drawer-overlay {
             position: fixed;
             top: 0;
@@ -442,6 +449,7 @@
             height: 100vh;
             background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
             z-index: 100;
             display: none;
             align-items: center;
@@ -458,6 +466,7 @@
             max-height: 85vh;
             background: rgba(15, 23, 42, 0.92);
             backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.16);
             border-radius: 20px;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
@@ -470,6 +479,43 @@
         @keyframes modalIn {
             from { opacity: 0; transform: scale(0.95); }
             to { opacity: 1; transform: scale(1); }
+        }
+
+        /* 动作调试面板特化：靠左侧浮动，不添加全屏模糊遮罩，避免遮挡人物 */
+        #actionDrawer {
+            background: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            pointer-events: none;
+            justify-content: flex-start;
+            align-items: flex-start;
+        }
+
+        #actionDrawer .drawer-box {
+            position: fixed;
+            top: 88px;
+            left: 24px;
+            width: 360px;
+            max-width: calc(100vw - 48px);
+            max-height: calc(100vh - 200px);
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 20px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+            pointer-events: auto;
+            animation: actionDrawerIn 0.25s ease-out;
+        }
+
+        #actionDrawer .action-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        @keyframes actionDrawerIn {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
         }
 
         .drawer-header {
@@ -602,13 +648,21 @@
                 transform: none;
                 width: auto;
             }
+            #actionDrawer .drawer-box {
+                top: 80px;
+                left: 10px;
+                right: 10px;
+                width: auto;
+                max-height: 50vh;
+            }
         }
     </style>
 
-    <!-- 配置标志：隐藏 WebGL 内部背景图与齿轮，使画布透明显示 background.jpg -->
+    <!-- 配置标志：隐藏 WebGL 内部背景图与齿轮，使画布透明显示 background.jpg；设置模型缩放 -->
     <script>
         window.hideLive2DBackground = true;
         window.hideLive2DGear = true;
+        window.live2dModelScale = 0.9; // 模型缩小至当前的 90%
     </script>
 
     <!-- Live2D Cubism Core & 依赖 -->
@@ -1068,13 +1122,16 @@
         // 动作测试 Drawer 交互
         // ==========================================
         openActionDrawerBtn.addEventListener('click', () => {
-            actionDrawer.classList.add('active');
+            const isActive = actionDrawer.classList.toggle('active');
+            openActionDrawerBtn.classList.toggle('active', isActive);
         });
         closeActionDrawerBtn.addEventListener('click', () => {
             actionDrawer.classList.remove('active');
+            openActionDrawerBtn.classList.remove('active');
         });
         closeActionDrawerConfirmBtn.addEventListener('click', () => {
             actionDrawer.classList.remove('active');
+            openActionDrawerBtn.classList.remove('active');
         });
 
         document.querySelectorAll('.action-btn[data-action]').forEach(btn => {
