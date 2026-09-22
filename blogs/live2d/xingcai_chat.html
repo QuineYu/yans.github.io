@@ -5,6 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>星彩 Live2D - AI 版</title>
     <style>
+        /* ==========================================================================
+           🎨 外观与交互定制接口 (Customization Interface)
+           后续修改光标、发送按钮小图标等配置，可直接调整此处的 CSS 变量或在 JS 中调用
+           ========================================================================== */
+        :root {
+            /* 1. 光标样式接口 (Custom Cursors)
+             * 更换光标示例:
+             *   --app-cursor-default: url('../../assets/normal.cur'), auto;
+             *   --app-cursor-pointer: url('../../assets/pointer.cur'), pointer;
+             *   --app-cursor-text: url('../../assets/text.cur'), text;
+             */
+            --app-cursor-default: default;
+            --app-cursor-pointer: pointer;
+            --app-cursor-text: text;
+
+            /* 2. 发送按键定制接口 (Send Button Interface)
+             * - 尺寸与圆角 (小方块设计):
+             *   --send-btn-size: 方块边长 (默认 36px)
+             *   --send-btn-radius: 圆角 (默认 8px，0px为硬朗纯方块)
+             * - 颜色与图标:
+             *   --send-btn-bg: 背景颜色/渐变
+             *   --send-btn-hover-bg: 鼠标悬浮背景
+             *   --send-btn-color: 图标/文字颜色
+             *   --send-btn-icon-image: 自定义图标背景图 (若后续更换为图片/SVG文件，填入如 url('icon.svg'))
+             */
+            --send-btn-size: 36px;
+            --send-btn-radius: 8px;
+            --send-btn-bg: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            --send-btn-hover-bg: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            --send-btn-color: #ffffff;
+            --send-btn-icon-image: none; /* 例: url('../../myimages/send_icon.svg') */
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -19,6 +52,7 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             color: #f0f4f8;
             background-color: #0d1117;
+            cursor: var(--app-cursor-default);
         }
 
         /* 全屏背景图片 */
@@ -228,12 +262,12 @@
 
         .sky-star {
             position: absolute;
-            width: 26px;
-            height: 26px;
+            width: 28px;
+            height: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
+            cursor: var(--app-cursor-pointer);
             pointer-events: auto;
             transform: translate(-50%, -50%);
             transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -242,16 +276,56 @@
 
         .sky-star:hover {
             transform: translate(-50%, -50%) scale(1.45);
-            z-index: 9;
+            z-index: 10;
         }
 
+        /* 1. 小幅度、缓慢的上下漂浮层 */
+        .star-float-box {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: starSlowFloat 6s ease-in-out infinite alternate;
+        }
+
+        @keyframes starSlowFloat {
+            0% {
+                transform: translateY(-4px);
+            }
+            100% {
+                transform: translateY(4px);
+            }
+        }
+
+        /* 2. 大尺度的轴向旋转层 (星系自转效果) */
+        .star-galaxy-spinner {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform-origin: center center;
+            animation: galaxyAxialSpin 22s linear infinite;
+        }
+
+        @keyframes galaxyAxialSpin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 3. 星光微光闪烁与光晕 */
         .star-icon {
             width: 100%;
             height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            animation: starFloat 4s ease-in-out infinite alternate, starTwinkle 3s ease-in-out infinite alternate;
+            animation: starTwinklePulse 3s ease-in-out infinite alternate;
         }
 
         .star-icon svg {
@@ -260,41 +334,86 @@
             filter: drop-shadow(0 0 6px currentColor) drop-shadow(0 0 14px currentColor);
         }
 
-        @keyframes starFloat {
-            0% { transform: translateY(0px) rotate(0deg); }
-            100% { transform: translateY(-5px) rotate(8deg); }
+        @keyframes starTwinklePulse {
+            0% {
+                opacity: 0.65;
+                transform: scale(0.92);
+                filter: drop-shadow(0 0 4px currentColor);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1.15);
+                filter: drop-shadow(0 0 8px currentColor) drop-shadow(0 0 16px currentColor);
+            }
         }
 
-        @keyframes starTwinkle {
-            0% { opacity: 0.65; transform: scale(0.9); }
-            100% { opacity: 1; transform: scale(1.15); }
+        /* 流星着陆生成星星时的动画 (不倾斜，保持正向) */
+        .sky-star.star-newborn {
+            animation: starBorn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
 
         @keyframes starBorn {
-            0% { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 0; }
-            50% { transform: translate(-50%, -50%) scale(1.6) rotate(90deg); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(1) rotate(45deg); opacity: 0.95; }
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 0;
+            }
+            60% {
+                transform: translate(-50%, -50%) scale(1.4);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
         }
 
+        /* 星辰坍缩化作尘埃消散动画 */
+        .sky-star.star-dissolving {
+            pointer-events: none !important;
+            animation: starDissolve 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+        }
+
+        .sky-star.star-dissolving .star-tooltip {
+            display: none !important;
+        }
+
+        @keyframes starDissolve {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                filter: brightness(1) drop-shadow(0 0 6px currentColor);
+                opacity: 1;
+            }
+            20% {
+                transform: translate(-50%, -50%) scale(1.4);
+                filter: brightness(2.6) drop-shadow(0 0 20px currentColor);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -65%) scale(0.08);
+                filter: brightness(3) blur(8px);
+                opacity: 0;
+            }
+        }
+
+        /* 悬浮提示框：完全正向 0°，文字透明度 75% */
         .star-tooltip {
             position: absolute;
             bottom: calc(100% + 10px);
             left: 50%;
-            transform: translateX(-50%) translateY(4px);
-            padding: 6px 12px;
+            transform: translateX(-50%) translateY(4px) rotate(0deg) !important;
+            padding: 7px 13px;
             background: rgba(15, 23, 42, 0.92);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            color: #f1f5f9;
-            font-size: 12px;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 10px;
             white-space: nowrap;
             pointer-events: none;
             opacity: 0;
             visibility: hidden;
-            transition: all 0.2s ease;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            z-index: 100;
         }
 
         .star-tooltip::after {
@@ -311,7 +430,24 @@
         .sky-star:hover .star-tooltip {
             opacity: 1;
             visibility: visible;
-            transform: translateX(-50%) translateY(0);
+            transform: translateX(-50%) translateY(0) rotate(0deg) !important;
+        }
+
+        .star-tooltip-title {
+            font-weight: 600;
+            font-size: 11px;
+            opacity: 0.75; /* 文字透明度 75% */
+            margin-bottom: 3px;
+        }
+
+        .star-tooltip-text {
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            opacity: 0.75; /* 文字透明度 75% */
+            font-size: 12px;
+            color: #f1f5f9;
         }
 
         /* 动画特效层 (流星与火花) */
@@ -360,6 +496,28 @@
         @keyframes sparkFade {
             0% { transform: scale(1); opacity: 1; }
             100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+        }
+
+        /* 星辰消散尘埃粒子 */
+        .cosmic-dust-particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            transform-origin: center center;
+            will-change: transform, opacity;
+            z-index: 52;
+        }
+
+        /* 星辰消散能量光晕 */
+        .cosmic-dust-halo {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%) scale(0.2);
+            opacity: 0.85;
+            filter: blur(5px);
+            will-change: transform, opacity;
+            z-index: 51;
         }
 
         /* 当前对话气泡 (正在进行的对话) */
@@ -613,9 +771,74 @@
             color: transparent;
         }
 
+        /* 发送按钮 (小方块设计，支持图标扩展接口) */
         .send-btn {
-            padding: 9px 20px;
-            border-radius: 18px;
+            width: var(--send-btn-size);
+            height: var(--send-btn-size);
+            min-width: var(--send-btn-size);
+            border-radius: var(--send-btn-radius);
+            background: var(--send-btn-bg);
+            color: var(--send-btn-color);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            cursor: var(--app-cursor-pointer);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+            flex-shrink: 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            background: var(--send-btn-hover-bg);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(2, 132, 199, 0.5);
+        }
+
+        .send-btn:active:not(:disabled) {
+            transform: scale(0.94);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 发送按钮图标插槽接口 (支持内置 SVG、自定义图片背景或外部 HTML 图标) */
+        .send-btn-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            background-image: var(--send-btn-icon-image);
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 58%;
+        }
+
+        .send-btn-icon svg {
+            width: 17px;
+            height: 17px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2.4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: transform 0.2s ease;
+        }
+
+        .send-btn:hover:not(:disabled) .send-btn-icon svg {
+            transform: translateY(-1px);
+        }
+
+        /* 模态框/通用保存操作常规按钮 */
+        .primary-action-btn {
+            padding: 8px 20px;
+            border-radius: 12px;
             background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
             border: none;
             color: #ffffff;
@@ -623,21 +846,21 @@
             font-weight: 500;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 6px;
-            cursor: pointer;
+            cursor: var(--app-cursor-pointer);
             transition: all 0.2s ease;
             box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
         }
 
-        .send-btn:hover:not(:disabled) {
+        .primary-action-btn:hover:not(:disabled) {
             background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
             transform: translateY(-1px);
             box-shadow: 0 6px 16px rgba(2, 132, 199, 0.5);
         }
 
-        .send-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
+        .primary-action-btn:active:not(:disabled) {
+            transform: scale(0.96);
         }
 
         /* 模态框通用遮罩 (用于设置等对话框) */
@@ -891,7 +1114,7 @@
                 <button class="nav-btn" id="historyDeleteBtn" style="color:#f87171;border-color:rgba(248,113,113,0.3);" title="从星空中放飞这颗星星">
                     <span>🗑️</span> 放飞
                 </button>
-                <button class="send-btn" id="closeHistoryModalConfirmBtn" style="padding:7px 18px;">
+                <button class="primary-action-btn" id="closeHistoryModalConfirmBtn">
                     关闭
                 </button>
             </div>
@@ -902,8 +1125,13 @@
     <div class="bottom-dock">
         <div class="input-bar">
             <input type="text" id="chatInput" class="input-field" placeholder="" autocomplete="off">
-            <button id="sendBtn" class="send-btn">
-                <span>发送</span> 🚀
+            <button id="sendBtn" class="send-btn" title="发送消息 (Enter)">
+                <span class="send-btn-icon">
+                    <svg viewBox="0 0 24 24">
+                        <line x1="12" y1="19" x2="12" y2="5"></line>
+                        <polyline points="5 12 12 5 19 12"></polyline>
+                    </svg>
+                </span>
             </button>
         </div>
     </div>
@@ -944,13 +1172,60 @@
             </div>
             <div class="drawer-footer">
                 <button class="nav-btn" id="resetSettingsBtn">恢复默认</button>
-                <button class="send-btn" id="saveSettingsBtn">保存配置</button>
+                <button class="primary-action-btn" id="saveSettingsBtn">保存配置</button>
             </div>
         </div>
     </div>
 
     <!-- 主交互逻辑脚本 -->
     <script>
+        /**
+         * ================================================================
+         * 🎨 外观与交互配置接口 (Customization API)
+         * ================================================================
+         * 供后续快速修改光标样式与发送按键小图标：
+         *
+         * 1. 更换光标 (支持 default, pointer, text 等)：
+         *    window.XingcaiCustomConfig.setCursor({
+         *        defaultCursor: "url('path/to/normal.cur'), auto",
+         *        pointerCursor: "url('path/to/pointer.cur'), pointer",
+         *        textCursor: "url('path/to/text.cur'), text"
+         *    });
+         *
+         * 2. 更换发送键图标图片 (填入图片或 SVG 的 URL 路径)：
+         *    window.XingcaiCustomConfig.setSendIconImage("../../myimages/send_icon.svg");
+         *
+         * 3. 更换发送键内部 HTML (如自定义 SVG 矢量代码或文字)：
+         *    window.XingcaiCustomConfig.setSendIconHtml("<svg>...</svg>");
+         *
+         * 4. 调整发送按键尺寸与圆角 (默认 36px, 8px 圆角)：
+         *    window.XingcaiCustomConfig.setSendButtonSize(36, 8);
+         * ================================================================
+         */
+        window.XingcaiCustomConfig = {
+            setCursor: function({ defaultCursor, pointerCursor, textCursor }) {
+                if (defaultCursor) document.documentElement.style.setProperty('--app-cursor-default', defaultCursor);
+                if (pointerCursor) document.documentElement.style.setProperty('--app-cursor-pointer', pointerCursor);
+                if (textCursor) document.documentElement.style.setProperty('--app-cursor-text', textCursor);
+            },
+            setSendIconImage: function(imageUrl) {
+                document.documentElement.style.setProperty('--send-btn-icon-image', `url("${imageUrl}")`);
+                const svg = document.querySelector('.send-btn-icon svg');
+                if (svg) svg.style.display = 'none';
+            },
+            setSendIconHtml: function(htmlString) {
+                const container = document.querySelector('.send-btn-icon');
+                if (container) {
+                    document.documentElement.style.setProperty('--send-btn-icon-image', 'none');
+                    container.innerHTML = htmlString;
+                }
+            },
+            setSendButtonSize: function(sizePx, radiusPx = 8) {
+                document.documentElement.style.setProperty('--send-btn-size', `${sizePx}px`);
+                document.documentElement.style.setProperty('--send-btn-radius', `${radiusPx}px`);
+            }
+        };
+
         // DOM 元素引用
         const chatInput = document.getElementById('chatInput');
         const sendBtn = document.getElementById('sendBtn');
@@ -1094,19 +1369,33 @@
             el.style.top = `${starData.y}%`;
             el.style.color = starData.color.color;
 
-            const delay = (Math.random() * 3).toFixed(1);
-            const duration = (2.8 + Math.random() * 2).toFixed(1);
+            // 缓慢漂浮参数 (小幅度上下漂浮 5~8.5s)
+            const floatDuration = (5.5 + Math.random() * 3).toFixed(1);
+            const floatDelay = (Math.random() * 4).toFixed(1);
+
+            // 星系大尺度轴向自转参数 (18~30s)
+            const spinDuration = (18 + Math.random() * 12).toFixed(1);
+            const spinDirection = Math.random() > 0.5 ? 'normal' : 'reverse';
+
+            // 星光闪烁脉动参数
+            const twinkleDuration = (2.5 + Math.random() * 2).toFixed(1);
+            const twinkleDelay = (Math.random() * 3).toFixed(1);
+
             const shortText = (starData.userText || '').substring(0, 18);
 
             el.innerHTML = `
-                <div class="star-icon" style="animation-delay: ${delay}s; animation-duration: ${duration}s;">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 0 L14.8 9.2 L24 12 L14.8 14.8 L12 24 L9.2 14.8 L0 12 L9.2 9.2 Z" fill="currentColor" />
-                    </svg>
+                <div class="star-float-box" style="animation-duration:${floatDuration}s; animation-delay:${floatDelay}s;">
+                    <div class="star-galaxy-spinner" style="animation-duration:${spinDuration}s; animation-direction:${spinDirection};">
+                        <div class="star-icon" style="animation-duration:${twinkleDuration}s; animation-delay:${twinkleDelay}s;">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M12 0 L14.8 9.2 L24 12 L14.8 14.8 L12 24 L9.2 14.8 L0 12 L9.2 9.2 Z" fill="currentColor" />
+                            </svg>
+                        </div>
+                    </div>
                 </div>
                 <div class="star-tooltip">
-                    <div style="font-weight:600;color:${starData.color.color};margin-bottom:2px;">✨ 记忆星芒</div>
-                    <div style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(shortText)}</div>
+                    <div class="star-tooltip-title">✨ 记忆星芒</div>
+                    <div class="star-tooltip-text">${escapeHtml(shortText)}</div>
                 </div>
             `;
 
@@ -1118,28 +1407,195 @@
             return el;
         }
 
+        // ==========================================
+        // 星辰化作尘埃消散特效
+        // ==========================================
+        function disintegrateStar(starEl, colorObj, onComplete) {
+            if (!starEl) {
+                if (onComplete) onComplete();
+                return;
+            }
+
+            const rect = starEl.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            // 1. 触发星星主体能量耀斑与坍缩消散
+            starEl.classList.add('star-dissolving');
+
+            // 2. 释放弥漫的宇宙尘埃微粒云与扩散光环
+            const baseColor = (colorObj && colorObj.color) || starEl.style.color || '#38bdf8';
+            const glowColor = (colorObj && colorObj.glow) || 'rgba(56, 189, 248, 0.6)';
+            spawnCosmicDustCloud(centerX, centerY, baseColor, glowColor);
+
+            // 3. 动画结束后安全清理 DOM
+            setTimeout(() => {
+                if (starEl.parentNode) {
+                    starEl.remove();
+                }
+                if (onComplete) onComplete();
+            }, 800);
+        }
+
+        function spawnCosmicDustCloud(centerX, centerY, baseColor, glowColor) {
+            // 弥散的宇宙微波微型光晕 (能量外溢波纹)
+            for (let h = 0; h < 2; h++) {
+                const halo = document.createElement('div');
+                halo.className = 'cosmic-dust-halo';
+                halo.style.left = `${centerX}px`;
+                halo.style.top = `${centerY}px`;
+                halo.style.width = `${24 + h * 16}px`;
+                halo.style.height = `${24 + h * 16}px`;
+                halo.style.background = `radial-gradient(circle, ${baseColor} 0%, ${glowColor} 50%, transparent 75%)`;
+                effectContainer.appendChild(halo);
+
+                const haloAnim = halo.animate([
+                    { transform: 'translate(-50%, -50%) scale(0.25)', opacity: 0.9 },
+                    { transform: 'translate(-50%, -50%) scale(2.4)', opacity: 0 }
+                ], {
+                    duration: 650 + h * 180,
+                    easing: 'cubic-bezier(0.18, 0.89, 0.32, 1.15)',
+                    fill: 'forwards'
+                });
+                haloAnim.onfinish = () => halo.remove();
+            }
+
+            // 细腻微光尘埃粒子 (18 ~ 26 颗自由飘散、轻盈升腾)
+            const particleCount = 18 + Math.floor(Math.random() * 8);
+            for (let i = 0; i < particleCount; i++) {
+                const dust = document.createElement('div');
+                dust.className = 'cosmic-dust-particle';
+
+                // 细小尘埃尺寸 (1.4px ~ 3.8px)
+                const size = (1.4 + Math.random() * 2.4).toFixed(1);
+                dust.style.width = `${size}px`;
+                dust.style.height = `${size}px`;
+
+                // 颜色混配：白金微光与星辰主题辉光相间
+                const isWhite = Math.random() > 0.5;
+                const pColor = isWhite ? '#ffffff' : baseColor;
+                dust.style.backgroundColor = pColor;
+                dust.style.boxShadow = isWhite
+                    ? '0 0 5px #ffffff, 0 0 10px rgba(255, 255, 255, 0.8)'
+                    : `0 0 6px ${baseColor}, 0 0 12px ${glowColor}`;
+
+                dust.style.left = `${centerX}px`;
+                dust.style.top = `${centerY}px`;
+                effectContainer.appendChild(dust);
+
+                // 物理飘散轨迹：向四方爆裂后，受宇宙微引力缓慢向上升腾漂浮
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 24 + Math.random() * 56; // 径向飞散距离
+                const upwardLift = -(18 + Math.random() * 38); // 升腾漂浮位移
+                const driftX = (Math.random() - 0.5) * 26; // 水平侧滑漂动
+
+                const midX = Math.cos(angle) * (speed * 0.5) + driftX * 0.35;
+                const midY = Math.sin(angle) * (speed * 0.5) + upwardLift * 0.35;
+                const endX = Math.cos(angle) * speed + driftX;
+                const endY = Math.sin(angle) * speed + upwardLift;
+
+                const duration = 800 + Math.random() * 450;
+                const delay = Math.random() * 70;
+
+                const anim = dust.animate([
+                    {
+                        transform: 'translate(-50%, -50%) translate(0, 0) scale(0.3)',
+                        opacity: 0
+                    },
+                    {
+                        transform: `translate(-50%, -50%) translate(${midX}px, ${midY}px) scale(1.3)`,
+                        opacity: 1,
+                        offset: 0.16
+                    },
+                    {
+                        transform: `translate(-50%, -50%) translate(${midX + (endX - midX) * 0.5}px, ${midY + (endY - midY) * 0.5}px) scale(0.95)`,
+                        opacity: 0.7,
+                        offset: 0.65
+                    },
+                    {
+                        transform: `translate(-50%, -50%) translate(${endX}px, ${endY}px) scale(0)`,
+                        opacity: 0,
+                        offset: 1
+                    }
+                ], {
+                    duration: duration,
+                    delay: delay,
+                    easing: 'cubic-bezier(0.12, 0.8, 0.32, 1)',
+                    fill: 'forwards'
+                });
+
+                anim.onfinish = () => dust.remove();
+            }
+        }
+
         function deleteStar(id) {
             const starEl = document.getElementById(`star-${id}`);
+            const starData = starHistory.find(s => String(s.id) === String(id));
+            const colorObj = starData ? starData.color : null;
+
             if (starEl) {
-                starEl.style.transform = 'translate(-50%, -50%) scale(0)';
-                starEl.style.opacity = '0';
-                setTimeout(() => starEl.remove(), 300);
+                disintegrateStar(starEl, colorObj);
             }
-            starHistory = starHistory.filter(s => s.id !== id);
+            starHistory = starHistory.filter(s => String(s.id) !== String(id));
             localStorage.setItem('xingcai_star_history', JSON.stringify(starHistory));
         }
 
+        let isClearingStars = false;
+
         clearChatBtn.addEventListener('click', () => {
+            if (isClearingStars) return;
             if (starHistory.length === 0 && !currentActiveDialogue) return;
-            if (confirm('确定要清理夜空中的所有对话星辰吗？')) {
+            if (!confirm('确定要清理夜空中的所有对话星辰吗？')) return;
+
+            isClearingStars = true;
+            clearChatBtn.style.opacity = '0.5';
+            clearChatBtn.style.pointerEvents = 'none';
+
+            // 1. 若当前有尚未缩成星星的对话气泡，同样化作柔和尘埃消散
+            if (currentActiveDialogue) {
+                clearCollapseCountdown();
+                const bubble = activeDialogBubble;
+                const rect = bubble.getBoundingClientRect();
+                const bx = rect.left + rect.width / 2;
+                const by = rect.top + rect.height / 2;
+                spawnCosmicDustCloud(bx, by, '#38bdf8', 'rgba(56, 189, 248, 0.6)');
+                bubble.classList.remove('visible', 'condensing');
+                currentActiveDialogue = null;
+            }
+
+            const starElements = Array.from(starsContainer.querySelectorAll('.sky-star'));
+            const totalStars = starElements.length;
+
+            if (totalStars === 0) {
+                finishClear();
+                return;
+            }
+
+            // 2. 波浪涟漪式群星依次解构化作尘埃消散
+            let finishedCount = 0;
+            starElements.forEach((starEl, index) => {
+                const delay = Math.min(index * 55, 600) + Math.random() * 25;
+                setTimeout(() => {
+                    const id = starEl.id ? starEl.id.replace('star-', '') : null;
+                    const starData = starHistory.find(s => String(s.id) === String(id));
+                    const colorObj = starData ? starData.color : null;
+
+                    disintegrateStar(starEl, colorObj, () => {
+                        finishedCount++;
+                        if (finishedCount >= totalStars) {
+                            finishClear();
+                        }
+                    });
+                }, delay);
+            });
+
+            function finishClear() {
                 starsContainer.innerHTML = '';
                 starHistory = [];
                 localStorage.removeItem('xingcai_star_history');
-                if (currentActiveDialogue) {
-                    clearCollapseCountdown();
-                    currentActiveDialogue = null;
-                    activeDialogBubble.classList.remove('visible', 'condensing');
-                }
+                isClearingStars = false;
+                clearChatBtn.style.opacity = '';
+                clearChatBtn.style.pointerEvents = '';
             }
         });
 
@@ -1297,8 +1753,11 @@
 
             shootMeteor(fromX, fromY, toX, toY, colorObj, () => {
                 const starEl = createStarElement(starData);
-                starEl.style.animation = 'starBorn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
+                starEl.classList.add('star-newborn');
                 starsContainer.appendChild(starEl);
+                setTimeout(() => {
+                    starEl.classList.remove('star-newborn');
+                }, 600);
 
                 starHistory.push(starData);
                 localStorage.setItem('xingcai_star_history', JSON.stringify(starHistory));
