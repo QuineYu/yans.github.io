@@ -36,16 +36,6 @@
             --send-btn-hover-bg: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
             --send-btn-color: #ffffff;
             --send-btn-icon-image: none; /* 例: url('../../myimages/send_icon.svg') */
-
-            /* 3. 星系公转定制接口 (Celestial Orbit Interface)
-             * - 公转中心与周期:
-             *   --stars-orbit-x: 公转中心水平位置 (默认 50%，即 0.5w)
-             *   --stars-orbit-y: 公转中心垂直位置 (默认 80%，即 0.8h)
-             *   --stars-orbit-duration: 顺时针旋转一圈耗时 (默认 240s)
-             */
-            --stars-orbit-x: 50%;
-            --stars-orbit-y: 80%;
-            --stars-orbit-duration: 240s;
         }
 
         * {
@@ -103,129 +93,91 @@
             pointer-events: auto !important;
         }
 
-        /* 顶部导航栏 (玻璃拟态) */
+        /* 顶部导航栏 (无底框悬浮设计，去除遮挡) */
         .top-navbar {
             position: fixed;
-            top: 16px;
+            top: 18px;
             left: 20px;
             right: 20px;
-            height: 56px;
+            height: auto;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 20px;
-            background: rgba(18, 24, 38, 0.65);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+            padding: 0;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            pointer-events: none;
             z-index: 10;
         }
 
         .nav-left {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
+            pointer-events: auto;
         }
 
+        /* 返回键：精巧小方块设计，只显示返回符号 */
         .back-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            color: #f1f5f9;
+            font-size: 16px;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: #e2e8f0;
-            font-size: 14px;
+            justify-content: center;
             text-decoration: none;
-            transition: all 0.2s ease;
-            cursor: pointer;
+            cursor: var(--app-cursor-pointer);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
         }
 
         .back-btn:hover {
             background: rgba(255, 255, 255, 0.18);
-            border-color: rgba(255, 255, 255, 0.3);
+            border-color: rgba(56, 189, 248, 0.45);
+            color: #38bdf8;
             transform: translateY(-1px);
-        }
-
-        .char-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            background: linear-gradient(135deg, #ffffff 0%, #a5f3fc 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-            background: rgba(16, 185, 129, 0.15);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            color: #34d399;
-            transition: all 0.3s ease;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background-color: currentColor;
-            box-shadow: 0 0 8px currentColor;
-            animation: pulse-dot 2s infinite;
-        }
-
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.85); }
-        }
-
-        .status-badge.offline {
-            background: rgba(245, 158, 11, 0.15);
-            border-color: rgba(245, 158, 11, 0.3);
-            color: #fbbf24;
-        }
-
-        .status-badge.speaking {
-            background: rgba(59, 130, 246, 0.15);
-            border-color: rgba(59, 130, 246, 0.3);
-            color: #60a5fa;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
         }
 
         .nav-actions {
             display: flex;
             align-items: center;
             gap: 10px;
+            pointer-events: auto;
         }
 
         .nav-btn {
             padding: 7px 14px;
             border-radius: 10px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.16);
             color: #f1f5f9;
             font-size: 13px;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            cursor: pointer;
+            cursor: var(--app-cursor-pointer);
             transition: all 0.2s ease;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
         }
 
         .nav-btn:hover {
             background: rgba(255, 255, 255, 0.18);
-            border-color: rgba(0, 242, 254, 0.4);
+            border-color: rgba(56, 189, 248, 0.45);
+            color: #38bdf8;
             transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
         }
 
         /* 动作徽章 */
@@ -259,7 +211,7 @@
             50% { opacity: 0; }
         }
 
-        /* 背景流星与星空容器：所有星星绕着屏幕 (0.5w, 0.8h) 顺时针缓慢公转 */
+        /* 背景星空容器 (固定全屏容器，星辰各自沿精算椭圆轨道顺时针公转) */
         #starsContainer {
             position: fixed;
             top: 0;
@@ -268,21 +220,12 @@
             height: 100vh;
             pointer-events: none;
             z-index: 5;
-            transform-origin: var(--stars-orbit-x, 50%) var(--stars-orbit-y, 80%);
-            animation: celestialOrbitClockwise var(--stars-orbit-duration, 240s) linear infinite;
-        }
-
-        @keyframes celestialOrbitClockwise {
-            0% {
-                transform: rotate(0deg);
-            }
-            100% {
-                transform: rotate(360deg);
-            }
         }
 
         .sky-star {
-            position: absolute;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 28px;
             height: 28px;
             display: flex;
@@ -290,34 +233,26 @@
             justify-content: center;
             cursor: var(--app-cursor-pointer);
             pointer-events: auto;
-            transform: translate(-50%, -50%);
-            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
             z-index: 6;
+            will-change: transform;
         }
 
         .sky-star:hover {
-            transform: translate(-50%, -50%) scale(1.45);
             z-index: 10;
         }
 
-        /* 0. 公转逆向补偿层 (抵消星空容器整体公转，使提示框与星辰本体朝向恒定正向) */
-        .star-counter-orbit {
+        /* 星星本体缩放层 (与外层平移坐标解耦，确保悬停缩放与椭圆运转互不干扰) */
+        .star-body {
             width: 100%;
             height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            transform-origin: center center;
-            animation: celestialCounterRevolution var(--stars-orbit-duration, 240s) linear infinite;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        @keyframes celestialCounterRevolution {
-            0% {
-                transform: rotate(0deg);
-            }
-            100% {
-                transform: rotate(-360deg);
-            }
+        .sky-star:hover .star-body {
+            transform: scale(1.45);
         }
 
         /* 1. 小幅度、缓慢的上下漂浮层 */
@@ -1077,18 +1012,14 @@
     <div class="bg-overlay"></div>
 
     <!-- 顶部导航栏 -->
+    <!-- 顶部导航栏 (无底框悬浮设计) -->
     <header class="top-navbar">
         <div class="nav-left">
             <a href="../../study.html" class="back-btn" title="返回笔记目录">
-                <span>←</span> 返回笔记
+                <span>←</span>
             </a>
-            <div class="char-title">
-                <span>星彩 Live2D (AI 版)</span>
-                <span class="status-badge" id="statusBadge">
-                    <span class="status-dot"></span>
-                    <span id="statusText">初始化中...</span>
-                </span>
-            </div>
+            <!-- 状态引用占位 (隐藏以免遮挡屏幕，同时保证JS状态代码正常执行) -->
+            <span id="statusBadge" style="display:none;"><span id="statusText"></span></span>
         </div>
 
         <div class="nav-actions">
@@ -1266,11 +1197,7 @@
                 document.documentElement.style.setProperty('--send-btn-radius', `${radiusPx}px`);
             },
             setOrbitDuration: function(seconds) {
-                document.documentElement.style.setProperty('--stars-orbit-duration', `${seconds}s`);
-            },
-            setOrbitCenter: function(xPercent, yPercent) {
-                document.documentElement.style.setProperty('--stars-orbit-x', `${xPercent}%`);
-                document.documentElement.style.setProperty('--stars-orbit-y', `${yPercent}%`);
+                orbitDuration = Math.max(10, Number(seconds) || 240);
             }
         };
 
@@ -1376,45 +1303,113 @@
         }
 
         // ==========================================
-        // 星辰背景与历史记录管理
         // ==========================================
+        // 椭圆星轨几何与公转动力学系统
+        // 最大椭圆四个点位于去掉底部对话框后的屏幕上下左右正中，绝不转出屏幕
+        // ==========================================
+        let orbitBounds = {
+            xc: 0,
+            yc: 0,
+            aMax: 0,
+            bMax: 0
+        };
+
+        function updateEllipseBounds() {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            const dockHeight = 84; // 去掉底部输入框及边距
+            const usableH = Math.max(200, h - dockHeight);
+            const pad = 28; // 边缘安全边距，确保星芒完整不贴边
+
+            // 旋转中心：最大椭圆的中心
+            orbitBounds.xc = w * 0.5;
+            orbitBounds.yc = usableH * 0.5;
+
+            // 最大椭圆的半长轴 (水平) 与半短轴 (垂直)
+            // 确保四个极点恰好落在屏幕左、右、上及输入框上方的正中
+            orbitBounds.aMax = Math.max(50, w * 0.5 - pad);
+            orbitBounds.bMax = Math.max(50, usableH * 0.5 - pad);
+        }
+
+        let orbitDuration = 240; // 顺时针公转一圈耗时 (秒)
+        let lastOrbitTimestamp = performance.now();
+        let isOrbitLoopRunning = false;
+
+        function startCelestialOrbitLoop() {
+            if (isOrbitLoopRunning) return;
+            isOrbitLoopRunning = true;
+            updateEllipseBounds();
+            window.addEventListener('resize', updateEllipseBounds);
+
+            function orbitStep(now) {
+                const dt = Math.min(0.1, (now - lastOrbitTimestamp) / 1000);
+                lastOrbitTimestamp = now;
+
+                const omega = (2 * Math.PI) / orbitDuration; // 顺时针角速度
+
+                for (let i = 0; i < starHistory.length; i++) {
+                    const starData = starHistory[i];
+                    if (starData._dissolving) continue;
+
+                    // 鼠标悬浮时静止停留，方便交互阅读记忆卡片，移开后平稳恢复公转
+                    if (!starData._paused) {
+                        starData.angle = (starData.angle || 0) + omega * dt;
+                        if (starData.angle > Math.PI * 2) {
+                            starData.angle -= Math.PI * 2;
+                        }
+                    }
+
+                    const starEl = document.getElementById(`star-${starData.id}`);
+                    if (starEl) {
+                        const scale = starData.orbitScale || 0.68;
+                        const a = scale * orbitBounds.aMax;
+                        const b = scale * orbitBounds.bMax;
+                        const curX = orbitBounds.xc + a * Math.cos(starData.angle);
+                        const curY = orbitBounds.yc + b * Math.sin(starData.angle);
+                        starEl.style.transform = `translate(${curX.toFixed(2)}px, ${curY.toFixed(2)}px) translate(-50%, -50%)`;
+                    }
+                }
+
+                requestAnimationFrame(orbitStep);
+            }
+
+            requestAnimationFrame(orbitStep);
+        }
+
         function loadStarHistory() {
             try {
                 const stored = localStorage.getItem('xingcai_star_history');
                 if (stored) {
                     starHistory = JSON.parse(stored);
                     starsContainer.innerHTML = '';
+                    updateEllipseBounds();
                     starHistory.forEach(item => {
+                        // 兼容旧版百分比坐标：若无 orbitScale 则平滑映射入椭圆轨道
+                        if (item.orbitScale === undefined) {
+                            const rawX = (item.x / 100) * window.innerWidth;
+                            const rawY = (item.y / 100) * window.innerHeight;
+                            const dx = rawX - orbitBounds.xc;
+                            const dy = rawY - orbitBounds.yc;
+                            item.angle = Math.atan2(dy / orbitBounds.bMax, dx / orbitBounds.aMax);
+                            const r = Math.sqrt(Math.pow(dx / orbitBounds.aMax, 2) + Math.pow(dy / orbitBounds.bMax, 2));
+                            item.orbitScale = Math.min(0.95, Math.max(0.4, r || 0.68));
+                        }
                         const starEl = createStarElement(item);
                         starsContainer.appendChild(starEl);
                     });
                 }
+                startCelestialOrbitLoop();
             } catch (e) {
                 console.warn('加载历史星辰失败:', e);
                 starHistory = [];
+                startCelestialOrbitLoop();
             }
-        }
-
-        // 避开中间 Live2D 人物立绘的安全星空区域
-        function getRandomStarPosition() {
-            const zones = [
-                { minX: 6, maxX: 30, minY: 14, maxY: 82 },   // 左侧夜空
-                { minX: 70, maxX: 94, minY: 14, maxY: 82 },  // 右侧夜空
-                { minX: 32, maxX: 68, minY: 12, maxY: 24 }   // 顶部夜空
-            ];
-            const r = Math.random();
-            const zone = r < 0.45 ? zones[0] : (r < 0.90 ? zones[1] : zones[2]);
-            const x = Math.round(zone.minX + Math.random() * (zone.maxX - zone.minX));
-            const y = Math.round(zone.minY + Math.random() * (zone.maxY - zone.minY));
-            return { x, y };
         }
 
         function createStarElement(starData) {
             const el = document.createElement('div');
             el.className = 'sky-star';
             el.id = `star-${starData.id}`;
-            el.style.left = `${starData.x}%`;
-            el.style.top = `${starData.y}%`;
             el.style.color = starData.color.color;
 
             // 缓慢漂浮参数 (小幅度上下漂浮 5~8.5s)
@@ -1431,8 +1426,16 @@
 
             const shortText = (starData.userText || '').substring(0, 18);
 
+            // 初始坐标立即定位
+            const scale = starData.orbitScale || 0.68;
+            const a = scale * orbitBounds.aMax;
+            const b = scale * orbitBounds.bMax;
+            const curX = orbitBounds.xc + a * Math.cos(starData.angle || 0);
+            const curY = orbitBounds.yc + b * Math.sin(starData.angle || 0);
+            el.style.transform = `translate(${curX.toFixed(2)}px, ${curY.toFixed(2)}px) translate(-50%, -50%)`;
+
             el.innerHTML = `
-                <div class="star-counter-orbit">
+                <div class="star-body">
                     <div class="star-float-box" style="animation-duration:${floatDuration}s; animation-delay:${floatDelay}s;">
                         <div class="star-galaxy-spinner" style="animation-duration:${spinDuration}s; animation-direction:${spinDirection};">
                             <div class="star-icon" style="animation-duration:${twinkleDuration}s; animation-delay:${twinkleDelay}s;">
@@ -1449,13 +1452,13 @@
                 </div>
             `;
 
-            // 同步公转逆向补偿时间轴，使无论何时新增星辰，提示框与星辰本体都绝对正向
-            const orbitDuration = 240;
-            const elapsed = (performance.now() / 1000) % orbitDuration;
-            const counterOrbitEl = el.querySelector('.star-counter-orbit');
-            if (counterOrbitEl) {
-                counterOrbitEl.style.animationDelay = `-${elapsed.toFixed(3)}s`;
-            }
+            // 悬停时停止公转漂移，方便阅读与点击
+            el.addEventListener('mouseenter', () => {
+                starData._paused = true;
+            });
+            el.addEventListener('mouseleave', () => {
+                starData._paused = false;
+            });
 
             el.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -1472,6 +1475,12 @@
             if (!starEl) {
                 if (onComplete) onComplete();
                 return;
+            }
+
+            const id = starEl.id ? starEl.id.replace('star-', '') : null;
+            const starData = starHistory.find(s => String(s.id) === String(id));
+            if (starData) {
+                starData._dissolving = true;
             }
 
             const rect = starEl.getBoundingClientRect();
@@ -1782,41 +1791,6 @@
             condenseCurrentBubble();
         });
 
-        // 计算星空公转容器在当前旋转矩阵下，星辰坐标 (pctX%, pctY%) 在视口中的真实像素位置
-        function getRotatedScreenPos(pctX, pctY) {
-            const centerX = window.innerWidth * 0.5;
-            const centerY = window.innerHeight * 0.8;
-            const origX = (pctX / 100) * window.innerWidth;
-            const origY = (pctY / 100) * window.innerHeight;
-
-            const transform = window.getComputedStyle(starsContainer).transform;
-            if (transform && transform !== 'none') {
-                const match2d = transform.match(/^matrix\(([^)]+)\)$/);
-                if (match2d) {
-                    const [a, b] = match2d[1].split(',').map(Number);
-                    const dx = origX - centerX;
-                    const dy = origY - centerY;
-                    return {
-                        x: centerX + (dx * a - dy * b),
-                        y: centerY + (dx * b + dy * a)
-                    };
-                }
-                const match3d = transform.match(/^matrix3d\(([^)]+)\)$/);
-                if (match3d) {
-                    const parts = match3d[1].split(',').map(Number);
-                    const a = parts[0];
-                    const b = parts[1];
-                    const dx = origX - centerX;
-                    const dy = origY - centerY;
-                    return {
-                        x: centerX + (dx * a - dy * b),
-                        y: centerY + (dx * b + dy * a)
-                    };
-                }
-            }
-            return { x: origX, y: origY };
-        }
-
         function condenseCurrentBubble() {
             if (!currentActiveDialogue) return;
             clearCollapseCountdown();
@@ -1826,10 +1800,14 @@
             const fromX = rect.left + rect.width / 2;
             const fromY = rect.top + rect.height / 2;
 
-            const pos = getRandomStarPosition();
-            const target = getRotatedScreenPos(pos.x, pos.y);
-            const toX = target.x;
-            const toY = target.y;
+            // 选取椭圆轨道参数：缩放比例 k (0.42 ~ 0.94)，初始顺时针方位角 (0 ~ 2PI)
+            const orbitScale = 0.42 + Math.random() * 0.52;
+            const initialAngle = Math.random() * Math.PI * 2;
+
+            const a = orbitScale * orbitBounds.aMax;
+            const b = orbitScale * orbitBounds.bMax;
+            const toX = orbitBounds.xc + a * Math.cos(initialAngle);
+            const toY = orbitBounds.yc + b * Math.sin(initialAngle);
             const colorObj = STAR_PALETTE[Math.floor(Math.random() * STAR_PALETTE.length)];
 
             const starData = {
@@ -1837,8 +1815,8 @@
                 userText: currentActiveDialogue.userText,
                 aiText: currentActiveDialogue.aiText,
                 time: currentActiveDialogue.time,
-                x: pos.x,
-                y: pos.y,
+                orbitScale: orbitScale,
+                angle: initialAngle,
                 color: colorObj
             };
 
