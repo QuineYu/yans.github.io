@@ -184,127 +184,6 @@
             transform: translateY(-1px);
         }
 
-        .nav-btn.active {
-            background: rgba(56, 189, 248, 0.25);
-            border-color: rgba(56, 189, 248, 0.6);
-            color: #ffffff;
-            box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
-        }
-
-        /* 聊天主界面容器 */
-        .chat-container {
-            position: fixed;
-            bottom: 110px;
-            right: 24px;
-            width: 440px;
-            max-width: calc(100vw - 48px);
-            height: 480px;
-            max-height: calc(100vh - 200px);
-            background: rgba(15, 23, 42, 0.72);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            border-radius: 20px;
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            z-index: 10;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .chat-container.minimized {
-            height: 48px;
-            overflow: hidden;
-        }
-
-        .chat-header {
-            padding: 10px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(255, 255, 255, 0.03);
-            font-size: 13px;
-            color: #94a3b8;
-            cursor: pointer;
-        }
-
-        .chat-header:hover {
-            color: #e2e8f0;
-        }
-
-        .chat-toggle-btn {
-            background: transparent;
-            border: none;
-            color: inherit;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        /* 消息列表 */
-        .messages-list {
-            flex: 1;
-            padding: 16px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            user-select: text;
-        }
-
-        .messages-list::-webkit-scrollbar {
-            width: 5px;
-        }
-        .messages-list::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.18);
-            border-radius: 4px;
-        }
-
-        .msg-row {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            animation: fadeIn 0.25s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .msg-row.user {
-            align-items: flex-end;
-        }
-
-        .msg-row.ai {
-            align-items: flex-start;
-        }
-
-        .msg-bubble {
-            max-width: 86%;
-            padding: 10px 14px;
-            border-radius: 14px;
-            font-size: 14px;
-            line-height: 1.55;
-            word-break: break-word;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
-        }
-
-        .msg-row.user .msg-bubble {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-            color: #ffffff;
-            border-bottom-right-radius: 4px;
-            border: 1px solid rgba(255, 255, 255, 0.18);
-        }
-
-        .msg-row.ai .msg-bubble {
-            background: rgba(30, 41, 59, 0.85);
-            color: #f1f5f9;
-            border-bottom-left-radius: 4px;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-        }
-
         /* 动作徽章 */
         .action-tag {
             display: inline-flex;
@@ -336,61 +215,382 @@
             50% { opacity: 0; }
         }
 
-        /* 底部固定输入与快捷操作区 (居中) */
-        .bottom-dock {
+        /* 背景流星与星空容器 */
+        #starsContainer {
             position: fixed;
-            bottom: 20px;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .sky-star {
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            pointer-events: auto;
+            transform: translate(-50%, -50%);
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 6;
+        }
+
+        .sky-star:hover {
+            transform: translate(-50%, -50%) scale(1.45);
+            z-index: 9;
+        }
+
+        .star-icon {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: starFloat 4s ease-in-out infinite alternate, starTwinkle 3s ease-in-out infinite alternate;
+        }
+
+        .star-icon svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 6px currentColor) drop-shadow(0 0 14px currentColor);
+        }
+
+        @keyframes starFloat {
+            0% { transform: translateY(0px) rotate(0deg); }
+            100% { transform: translateY(-5px) rotate(8deg); }
+        }
+
+        @keyframes starTwinkle {
+            0% { opacity: 0.65; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1.15); }
+        }
+
+        @keyframes starBorn {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.6) rotate(90deg); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1) rotate(45deg); opacity: 0.95; }
+        }
+
+        .star-tooltip {
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%) translateY(4px);
+            padding: 6px 12px;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: #f1f5f9;
+            font-size: 12px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+        }
+
+        .star-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
             left: 50%;
             transform: translateX(-50%);
-            width: 860px;
-            max-width: calc(100vw - 32px);
+            border-width: 5px;
+            border-style: solid;
+            border-color: rgba(15, 23, 42, 0.92) transparent transparent transparent;
+        }
+
+        .sky-star:hover .star-tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* 动画特效层 (流星与火花) */
+        #effectContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 50;
+            overflow: hidden;
+        }
+
+        .shooting-meteor {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ffffff;
+            box-shadow: 0 0 16px 4px #38bdf8, 0 0 32px 8px #a5f3fc;
+            pointer-events: none;
+            transform-origin: center center;
+        }
+
+        .shooting-meteor-tail {
+            position: absolute;
+            top: 50%;
+            right: 2px;
+            transform: translateY(-50%);
+            width: 180px;
+            height: 3px;
+            background: linear-gradient(to left, #ffffff 10%, #38bdf8 50%, rgba(56, 189, 248, 0) 100%);
+            border-radius: 999px;
+            filter: drop-shadow(0 0 6px #38bdf8);
+        }
+
+        .stardust-spark {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            background: #ffffff;
+            animation: sparkFade 0.6s ease-out forwards;
+        }
+
+        @keyframes sparkFade {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+        }
+
+        /* 当前对话气泡 (正在进行的对话) */
+        .active-dialog-bubble {
+            position: fixed;
+            right: 36px;
+            bottom: 96px;
+            width: 440px;
+            max-width: calc(100vw - 48px);
+            background: rgba(15, 23, 42, 0.82);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 20px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+            z-index: 20;
             display: flex;
             flex-direction: column;
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.9) translateY(20px);
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s;
+            overflow: hidden;
+        }
+
+        .active-dialog-bubble.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1) translateY(0);
+        }
+
+        .active-dialog-bubble.condensing {
+            transform: scale(0.05) translate(40px, -40px);
+            opacity: 0;
+            filter: blur(6px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 1, 1);
+        }
+
+        .active-bubble-header {
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .condense-btn {
+            background: rgba(56, 189, 248, 0.18);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            color: #38bdf8;
+            border-radius: 12px;
+            padding: 3px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .condense-btn:hover {
+            background: rgba(56, 189, 248, 0.35);
+            border-color: rgba(56, 189, 248, 0.7);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        .active-bubble-body {
+            padding: 16px;
+            max-height: 360px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            user-select: text;
+        }
+
+        .active-bubble-body::-webkit-scrollbar {
+            width: 5px;
+        }
+        .active-bubble-body::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.18);
+            border-radius: 4px;
+        }
+
+        .bubble-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        .bubble-row.user {
+            align-items: flex-end;
+        }
+
+        .bubble-row.ai {
+            align-items: flex-start;
+        }
+
+        .bubble-label {
+            font-size: 11px;
+            color: #64748b;
+            padding: 0 4px;
+        }
+
+        .bubble-text {
+            max-width: 90%;
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 14px;
+            line-height: 1.55;
+            word-break: break-word;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+        }
+
+        .bubble-text.user {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: #ffffff;
+            border-bottom-right-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .bubble-text.ai {
+            background: rgba(30, 41, 59, 0.85);
+            color: #f1f5f9;
+            border-bottom-left-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        /* 倒计时进度条 */
+        .bubble-collapse-progress {
+            height: 2px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.06);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #38bdf8, #a5f3fc);
+            transition: width linear;
+        }
+
+        /* 历史对话查看弹窗 (点击星星弹出) */
+        .history-bubble-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 90;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .history-bubble-overlay.active {
+            display: flex;
+        }
+
+        .history-bubble-card {
+            width: 500px;
+            max-width: calc(100vw - 36px);
+            max-height: 80vh;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: modalIn 0.25s ease-out;
+        }
+
+        .history-card-header {
+            padding: 14px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 15px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .history-card-body {
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            user-select: text;
+        }
+
+        .history-card-footer {
+            padding: 12px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
             gap: 10px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* 底部居中输入底栏 */
+        .bottom-dock {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 720px;
+            max-width: calc(100vw - 32px);
             z-index: 10;
         }
 
-        /* 快捷动作/问题药丸卡片 */
-        .quick-chips-row {
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding-bottom: 2px;
-            scrollbar-width: none;
-        }
-
-        .quick-chips-row::-webkit-scrollbar {
-            display: none;
-        }
-
-        .chip {
-            padding: 6px 13px;
-            border-radius: 20px;
-            background: rgba(18, 24, 38, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            color: #cbd5e1;
-            font-size: 13px;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: all 0.2s ease;
-        }
-
-        .chip:hover {
-            background: rgba(56, 189, 248, 0.25);
-            border-color: rgba(56, 189, 248, 0.5);
-            color: #ffffff;
-            transform: translateY(-2px);
-        }
-
-        /* 输入框底栏 */
         .input-bar {
             display: flex;
             align-items: center;
             gap: 10px;
             padding: 8px 14px;
-            background: rgba(15, 23, 42, 0.8);
+            background: rgba(15, 23, 42, 0.82);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.18);
@@ -410,7 +610,7 @@
         }
 
         .input-field::placeholder {
-            color: #64748b;
+            color: transparent;
         }
 
         .send-btn {
@@ -481,43 +681,6 @@
             to { opacity: 1; transform: scale(1); }
         }
 
-        /* 动作调试面板特化：靠左侧浮动，不添加全屏模糊遮罩，避免遮挡人物 */
-        #actionDrawer {
-            background: transparent !important;
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-            pointer-events: none;
-            justify-content: flex-start;
-            align-items: flex-start;
-        }
-
-        #actionDrawer .drawer-box {
-            position: fixed;
-            top: 88px;
-            left: 24px;
-            width: 360px;
-            max-width: calc(100vw - 48px);
-            max-height: calc(100vh - 200px);
-            background: rgba(15, 23, 42, 0.88);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.16);
-            border-radius: 20px;
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
-            pointer-events: auto;
-            animation: actionDrawerIn 0.25s ease-out;
-        }
-
-        #actionDrawer .action-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-        }
-
-        @keyframes actionDrawerIn {
-            from { opacity: 0; transform: translateX(-30px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
         .drawer-header {
             padding: 16px 22px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -557,34 +720,6 @@
             letter-spacing: 0.5px;
             margin-bottom: 6px;
             font-weight: 600;
-        }
-
-        .action-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-            gap: 10px;
-        }
-
-        .action-btn {
-            padding: 10px 8px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            color: #f1f5f9;
-            font-size: 13px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .action-btn:hover {
-            background: rgba(56, 189, 248, 0.2);
-            border-color: rgba(56, 189, 248, 0.5);
-            transform: translateY(-2px);
         }
 
         .form-group {
@@ -628,6 +763,11 @@
             gap: 12px;
         }
 
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* 响应式适配 */
         @media (max-width: 768px) {
             .top-navbar {
@@ -635,25 +775,18 @@
                 right: 10px;
                 padding: 0 12px;
             }
-            .chat-container {
+            .active-dialog-bubble {
                 right: 10px;
                 left: 10px;
                 width: auto;
-                bottom: 110px;
-                height: 380px;
+                bottom: 90px;
+                max-height: 50vh;
             }
             .bottom-dock {
                 left: 10px;
                 right: 10px;
                 transform: none;
                 width: auto;
-            }
-            #actionDrawer .drawer-box {
-                top: 80px;
-                left: 10px;
-                right: 10px;
-                width: auto;
-                max-height: 50vh;
             }
         }
     </style>
@@ -695,100 +828,83 @@
         </div>
 
         <div class="nav-actions">
-            <button class="nav-btn" id="openActionDrawerBtn" title="打开动作测试">
-                <span>🎭</span> 动作调试
-            </button>
             <button class="nav-btn" id="openSettingsBtn" title="配置本地大模型接口">
                 <span>⚙️</span> 模型设置
             </button>
-            <button class="nav-btn" id="clearChatBtn" title="清空对话">
-                <span>🧹</span> 清屏
+            <button class="nav-btn" id="clearChatBtn" title="清理夜空中的所有对话星辰">
+                <span>🧹</span> 清理星空
             </button>
         </div>
     </header>
 
-    <!-- 悬浮对话气泡容器 -->
-    <div class="chat-container" id="chatContainer">
-        <div class="chat-header" id="chatHeader">
-            <span>💬 对话记录</span>
-            <button class="chat-toggle-btn" id="chatToggleBtn" title="折叠/展开对话">🔽 折叠</button>
+    <!-- 背景夜空星辰容器 -->
+    <div id="starsContainer"></div>
+
+    <!-- 流星与粒子特效层 -->
+    <div id="effectContainer"></div>
+
+    <!-- 当前进行中的对话气泡 (无初始预设文字) -->
+    <div class="active-dialog-bubble" id="activeDialogBubble">
+        <div class="active-bubble-header">
+            <span class="active-bubble-title" id="activeBubbleTitle">✨ 交流中...</span>
+            <button class="condense-btn" id="condenseStarBtn" title="将当前对话收纳为流星">
+                <span>⭐ 凝成星辰</span>
+            </button>
         </div>
-        <div class="messages-list" id="messagesList">
-            <!-- 欢迎消息 -->
-            <div class="msg-row ai">
-                <div class="msg-bubble">
-                    <span class="action-tag">🏷️ 眨眼</span>
-                    <span class="action-tag">🏷️ 微笑</span>
-                    主人好呀！我是星彩。<br>
-                    我能感知您的输入，并根据对话做出点头、摇头、歪头、脸红害羞等动作哦！您可以在下方输入消息与我交流~
+        <div class="active-bubble-body" id="activeBubbleBody">
+            <div class="bubble-row user" id="activeUserRow">
+                <div class="bubble-label">🧑 您</div>
+                <div class="bubble-text user" id="activeUserText"></div>
+            </div>
+            <div class="bubble-row ai" id="activeAiRow">
+                <div class="bubble-label">🌸 星彩</div>
+                <div class="bubble-text ai" id="activeAiText"></div>
+            </div>
+        </div>
+        <div class="bubble-collapse-progress">
+            <div class="progress-bar" id="collapseProgressBar"></div>
+        </div>
+    </div>
+
+    <!-- 历史对话查看气泡卡片 (点击夜空星星弹出) -->
+    <div class="history-bubble-overlay" id="historyBubbleModal">
+        <div class="history-bubble-card">
+            <div class="history-card-header">
+                <div class="history-title" id="historyModalTitle">✨ 对话星辰</div>
+                <button class="close-btn" id="closeHistoryModalBtn">×</button>
+            </div>
+            <div class="history-card-body">
+                <div class="bubble-row user">
+                    <div class="bubble-label">🧑 您</div>
+                    <div class="bubble-text user" id="historyUserMsg"></div>
                 </div>
+                <div class="bubble-row ai">
+                    <div class="bubble-label">🌸 星彩</div>
+                    <div class="bubble-text ai" id="historyAiMsg"></div>
+                </div>
+            </div>
+            <div class="history-card-footer">
+                <button class="nav-btn" id="historyReplayBtn" title="让星彩重温本次对话动作">
+                    <span>👄</span> 重温动作与语音
+                </button>
+                <div style="flex:1"></div>
+                <button class="nav-btn" id="historyDeleteBtn" style="color:#f87171;border-color:rgba(248,113,113,0.3);" title="从星空中放飞这颗星星">
+                    <span>🗑️</span> 放飞
+                </button>
+                <button class="send-btn" id="closeHistoryModalConfirmBtn" style="padding:7px 18px;">
+                    关闭
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- 底部固定输入区与快捷指令 -->
+    <!-- 底部固定输入区 (无任何预设文字提示) -->
     <div class="bottom-dock">
-        <!-- 快捷药丸按钮 -->
-        <div class="quick-chips-row">
-            <div class="chip" data-prompt="星彩你好呀，打个招呼吧！">👋 打个招呼</div>
-            <div class="chip" data-prompt="星彩今天心情怎么样？">😊 今天心情怎么样？</div>
-            <div class="chip" data-prompt="星彩真可爱，害羞一个给我看看！">😳 害羞一个给我看</div>
-            <div class="chip" data-prompt="星彩换件外套试试看吧！">👗 换一件衣服</div>
-            <div class="chip" data-prompt="星彩眨个单眼卖个萌吧！">✨ 眨眼卖萌</div>
-            <div class="chip" data-prompt="星彩，什么是生命的意义呢？认真思考一下！">🤔 思考哲学问题</div>
-            <div class="chip" data-prompt="哇！星彩今天太棒了吧！">🎉 夸夸她</div>
-        </div>
-
-        <!-- 文本输入栏 -->
         <div class="input-bar">
-            <input type="text" id="chatInput" class="input-field" placeholder="输入消息与星彩交流... (按 Enter 发送)" autocomplete="off">
+            <input type="text" id="chatInput" class="input-field" placeholder="" autocomplete="off">
             <button id="sendBtn" class="send-btn">
                 <span>发送</span> 🚀
             </button>
-        </div>
-    </div>
-
-    <!-- 动作调试模态框 (Drawer) -->
-    <div class="drawer-overlay" id="actionDrawer">
-        <div class="drawer-box">
-            <div class="drawer-header">
-                <span>🎭 Live2D 动作与表情实时调试</span>
-                <button class="close-btn" id="closeActionDrawerBtn">×</button>
-            </div>
-            <div class="drawer-content">
-                <div>
-                    <div class="drawer-section-title">姿态动作驱动</div>
-                    <div class="action-grid">
-                        <button class="action-btn" data-action="点头"><span>🙇</span> 点头 (Nod)</button>
-                        <button class="action-btn" data-action="摇头"><span>🙅</span> 摇头 (Shake)</button>
-                        <button class="action-btn" data-action="歪头"><span>🙋</span> 歪头 (Tilt)</button>
-                        <button class="action-btn" data-action="思考"><span>🤔</span> 思考 (Think)</button>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="drawer-section-title">面部表情与情绪</div>
-                    <div class="action-grid">
-                        <button class="action-btn" data-action="害羞"><span>😳</span> 脸红害羞 (Blush)</button>
-                        <button class="action-btn" data-action="眨眼"><span>😉</span> 眨眼卖萌 (Wink)</button>
-                        <button class="action-btn" data-action="微笑"><span>😊</span> 开心微笑 (Smile)</button>
-                        <button class="action-btn" data-action="惊讶"><span>😮</span> 吃惊惊讶 (Surprise)</button>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="drawer-section-title">换装与对口型测试</div>
-                    <div class="action-grid">
-                        <button class="action-btn" data-action="换衣服"><span>🧥</span> 切换外套 (Jacket)</button>
-                        <button class="action-btn" data-action="裙子1"><span>👗</span> 切换裙子1</button>
-                        <button class="action-btn" data-action="裙子2"><span>👗</span> 切换裙子2</button>
-                        <button class="action-btn" id="testLipSyncBtn"><span>👄</span> 说话口型测试</button>
-                    </div>
-                </div>
-            </div>
-            <div class="drawer-footer">
-                <button class="nav-btn" id="closeActionDrawerConfirmBtn">完成</button>
-            </div>
         </div>
     </div>
 
@@ -835,21 +951,35 @@
 
     <!-- 主交互逻辑脚本 -->
     <script>
+        // DOM 元素引用
         const chatInput = document.getElementById('chatInput');
         const sendBtn = document.getElementById('sendBtn');
-        const messagesList = document.getElementById('messagesList');
         const statusBadge = document.getElementById('statusBadge');
         const statusText = document.getElementById('statusText');
-        const chatContainer = document.getElementById('chatContainer');
-        const chatToggleBtn = document.getElementById('chatToggleBtn');
         const clearChatBtn = document.getElementById('clearChatBtn');
 
-        // 抽屉与设置
-        const actionDrawer = document.getElementById('actionDrawer');
-        const openActionDrawerBtn = document.getElementById('openActionDrawerBtn');
-        const closeActionDrawerBtn = document.getElementById('closeActionDrawerBtn');
-        const closeActionDrawerConfirmBtn = document.getElementById('closeActionDrawerConfirmBtn');
+        const starsContainer = document.getElementById('starsContainer');
+        const effectContainer = document.getElementById('effectContainer');
 
+        // 当前进行中对话气泡
+        const activeDialogBubble = document.getElementById('activeDialogBubble');
+        const activeBubbleTitle = document.getElementById('activeBubbleTitle');
+        const activeUserText = document.getElementById('activeUserText');
+        const activeAiText = document.getElementById('activeAiText');
+        const condenseStarBtn = document.getElementById('condenseStarBtn');
+        const collapseProgressBar = document.getElementById('collapseProgressBar');
+
+        // 历史对话查看弹窗
+        const historyBubbleModal = document.getElementById('historyBubbleModal');
+        const historyModalTitle = document.getElementById('historyModalTitle');
+        const historyUserMsg = document.getElementById('historyUserMsg');
+        const historyAiMsg = document.getElementById('historyAiMsg');
+        const historyReplayBtn = document.getElementById('historyReplayBtn');
+        const historyDeleteBtn = document.getElementById('historyDeleteBtn');
+        const closeHistoryModalBtn = document.getElementById('closeHistoryModalBtn');
+        const closeHistoryModalConfirmBtn = document.getElementById('closeHistoryModalConfirmBtn');
+
+        // 模型设置 Drawer
         const settingsDrawer = document.getElementById('settingsDrawer');
         const openSettingsBtn = document.getElementById('openSettingsBtn');
         const closeSettingsBtn = document.getElementById('closeSettingsBtn');
@@ -863,16 +993,42 @@
         const settingApiKey = document.getElementById('settingApiKey');
         const settingSystemPrompt = document.getElementById('settingSystemPrompt');
 
-        // 对话上下文历史记录
+        // 星辰色彩调色板 (亮色/柔和发光)
+        const STAR_PALETTE = [
+            { color: '#38bdf8', glow: 'rgba(56, 189, 248, 0.65)' }, // 天空青
+            { color: '#facc15', glow: 'rgba(250, 204, 21, 0.65)' }, // 晨曦金
+            { color: '#c084fc', glow: 'rgba(192, 132, 252, 0.65)' }, // 星云紫
+            { color: '#34d399', glow: 'rgba(52, 211, 153, 0.65)' }, // 翡翠翠
+            { color: '#f472b6', glow: 'rgba(244, 114, 182, 0.65)' }, // 樱花粉
+            { color: '#67e8f9', glow: 'rgba(103, 232, 249, 0.65)' }  // 极光碧
+        ];
+
+        // 状态变量
         let chatHistory = [];
+        let starHistory = [];
+        let currentActiveDialogue = null;
         let isGenerating = false;
         let isServerOnline = false;
 
-        // 初始化页面状态
+        // 倒计时管理
+        let countdownRemaining = 4000;
+        let countdownStartTime = 0;
+        let countdownTimer = null;
+        let isBubbleHovered = false;
+
+        // 初始化
         window.addEventListener('DOMContentLoaded', async () => {
             initSettingsForm();
+            loadStarHistory();
             await checkServerStatus();
         });
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>"']/g, (m) => {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+            });
+        }
 
         function initSettingsForm() {
             settingBaseUrl.value = window.localLLMClient.baseUrl;
@@ -889,9 +1045,6 @@
                 isServerOnline = true;
                 statusBadge.className = 'status-badge';
                 statusText.innerText = '本地大模型已连接';
-                if (res.models && res.models.length > 0) {
-                    console.log('检测到本地模型列表:', res.models);
-                }
             } else {
                 isServerOnline = false;
                 statusBadge.className = 'status-badge offline';
@@ -899,60 +1052,341 @@
             }
         }
 
-        // 折叠/展开对话框
-        let isChatMinimized = false;
-        chatToggleBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            isChatMinimized = !isChatMinimized;
-            if (isChatMinimized) {
-                chatContainer.classList.add('minimized');
-                chatToggleBtn.innerText = '🔼 展开';
-            } else {
-                chatContainer.classList.remove('minimized');
-                chatToggleBtn.innerText = '🔽 折叠';
+        // ==========================================
+        // 星辰背景与历史记录管理
+        // ==========================================
+        function loadStarHistory() {
+            try {
+                const stored = localStorage.getItem('xingcai_star_history');
+                if (stored) {
+                    starHistory = JSON.parse(stored);
+                    starsContainer.innerHTML = '';
+                    starHistory.forEach(item => {
+                        const starEl = createStarElement(item);
+                        starsContainer.appendChild(starEl);
+                    });
+                }
+            } catch (e) {
+                console.warn('加载历史星辰失败:', e);
+                starHistory = [];
+            }
+        }
+
+        // 避开中间 Live2D 人物立绘的安全星空区域
+        function getRandomStarPosition() {
+            const zones = [
+                { minX: 6, maxX: 30, minY: 14, maxY: 82 },   // 左侧夜空
+                { minX: 70, maxX: 94, minY: 14, maxY: 82 },  // 右侧夜空
+                { minX: 32, maxX: 68, minY: 12, maxY: 24 }   // 顶部夜空
+            ];
+            const r = Math.random();
+            const zone = r < 0.45 ? zones[0] : (r < 0.90 ? zones[1] : zones[2]);
+            const x = Math.round(zone.minX + Math.random() * (zone.maxX - zone.minX));
+            const y = Math.round(zone.minY + Math.random() * (zone.maxY - zone.minY));
+            return { x, y };
+        }
+
+        function createStarElement(starData) {
+            const el = document.createElement('div');
+            el.className = 'sky-star';
+            el.id = `star-${starData.id}`;
+            el.style.left = `${starData.x}%`;
+            el.style.top = `${starData.y}%`;
+            el.style.color = starData.color.color;
+
+            const delay = (Math.random() * 3).toFixed(1);
+            const duration = (2.8 + Math.random() * 2).toFixed(1);
+            const shortText = (starData.userText || '').substring(0, 18);
+
+            el.innerHTML = `
+                <div class="star-icon" style="animation-delay: ${delay}s; animation-duration: ${duration}s;">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 0 L14.8 9.2 L24 12 L14.8 14.8 L12 24 L9.2 14.8 L0 12 L9.2 9.2 Z" fill="currentColor" />
+                    </svg>
+                </div>
+                <div class="star-tooltip">
+                    <div style="font-weight:600;color:${starData.color.color};margin-bottom:2px;">✨ 记忆星芒</div>
+                    <div style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(shortText)}</div>
+                </div>
+            `;
+
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openHistoryBubble(starData);
+            });
+
+            return el;
+        }
+
+        function deleteStar(id) {
+            const starEl = document.getElementById(`star-${id}`);
+            if (starEl) {
+                starEl.style.transform = 'translate(-50%, -50%) scale(0)';
+                starEl.style.opacity = '0';
+                setTimeout(() => starEl.remove(), 300);
+            }
+            starHistory = starHistory.filter(s => s.id !== id);
+            localStorage.setItem('xingcai_star_history', JSON.stringify(starHistory));
+        }
+
+        clearChatBtn.addEventListener('click', () => {
+            if (starHistory.length === 0 && !currentActiveDialogue) return;
+            if (confirm('确定要清理夜空中的所有对话星辰吗？')) {
+                starsContainer.innerHTML = '';
+                starHistory = [];
+                localStorage.removeItem('xingcai_star_history');
+                if (currentActiveDialogue) {
+                    clearCollapseCountdown();
+                    currentActiveDialogue = null;
+                    activeDialogBubble.classList.remove('visible', 'condensing');
+                }
             }
         });
-        document.getElementById('chatHeader').addEventListener('click', () => {
-            chatToggleBtn.click();
-        });
 
-        // 清屏
-        clearChatBtn.addEventListener('click', () => {
-            messagesList.innerHTML = '';
-            chatHistory = [];
-            addAIMessage('对话记录已清空~ 主人有什么新的话题想聊聊吗？', ['微笑']);
-        });
+        // ==========================================
+        // 流星划过与粒子特效
+        // ==========================================
+        function shootMeteor(fromX, fromY, toX, toY, colorObj, onComplete) {
+            const meteor = document.createElement('div');
+            meteor.className = 'shooting-meteor';
+            meteor.style.left = `${fromX}px`;
+            meteor.style.top = `${fromY}px`;
+            meteor.style.backgroundColor = '#ffffff';
+            meteor.style.boxShadow = `0 0 16px 4px ${colorObj.color}, 0 0 32px 8px ${colorObj.glow}`;
 
-        // 快捷 Chip 药丸点击
-        document.querySelectorAll('.chip').forEach(chip => {
-            chip.addEventListener('click', () => {
-                const prompt = chip.getAttribute('data-prompt');
-                if (prompt && !isGenerating) {
-                    chatInput.value = prompt;
-                    handleSend();
-                }
+            const tail = document.createElement('div');
+            tail.className = 'shooting-meteor-tail';
+            tail.style.background = `linear-gradient(to left, #ffffff 10%, ${colorObj.color} 50%, rgba(0,0,0,0) 100%)`;
+            tail.style.filter = `drop-shadow(0 0 6px ${colorObj.color})`;
+            meteor.appendChild(tail);
+
+            effectContainer.appendChild(meteor);
+
+            const deltaX = toX - fromX;
+            const deltaY = toY - fromY;
+            const angleDeg = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+
+            const anim = meteor.animate([
+                { transform: `translate(0px, 0px) rotate(${angleDeg}deg) scale(0.2)`, opacity: 0 },
+                { transform: `translate(${deltaX * 0.15}px, ${deltaY * 0.15}px) rotate(${angleDeg}deg) scale(1)`, opacity: 1, offset: 0.15 },
+                { transform: `translate(${deltaX * 0.9}px, ${deltaY * 0.9}px) rotate(${angleDeg}deg) scale(0.85)`, opacity: 1, offset: 0.9 },
+                { transform: `translate(${deltaX}px, ${deltaY}px) rotate(${angleDeg}deg) scale(0.1)`, opacity: 0, offset: 1 }
+            ], {
+                duration: 750,
+                easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)'
             });
+
+            anim.onfinish = () => {
+                meteor.remove();
+                spawnStardustBurst(toX, toY, colorObj.color);
+                if (onComplete) onComplete();
+            };
+        }
+
+        function spawnStardustBurst(x, y, color) {
+            const particleCount = 8;
+            for (let i = 0; i < particleCount; i++) {
+                const p = document.createElement('div');
+                p.className = 'stardust-spark';
+                const angle = (i / particleCount) * Math.PI * 2 + (Math.random() * 0.5);
+                const dist = 18 + Math.random() * 24;
+                const dx = Math.cos(angle) * dist;
+                const dy = Math.sin(angle) * dist;
+                const size = 3 + Math.random() * 3;
+
+                p.style.left = `${x}px`;
+                p.style.top = `${y}px`;
+                p.style.width = `${size}px`;
+                p.style.height = `${size}px`;
+                p.style.backgroundColor = color;
+                p.style.boxShadow = `0 0 8px ${color}`;
+                p.style.setProperty('--dx', `${dx}px`);
+                p.style.setProperty('--dy', `${dy}px`);
+                effectContainer.appendChild(p);
+
+                setTimeout(() => p.remove(), 600);
+            }
+        }
+
+        // ==========================================
+        // 当前对话气泡管理与流星收纳
+        // ==========================================
+        function startCollapseCountdown() {
+            clearCollapseCountdown();
+            countdownRemaining = 4000;
+            runCountdownStep();
+        }
+
+        function runCountdownStep() {
+            countdownStartTime = Date.now();
+            countdownTimer = setTimeout(() => {
+                condenseCurrentBubble();
+            }, countdownRemaining);
+            collapseProgressBar.style.transition = `width ${countdownRemaining}ms linear`;
+            collapseProgressBar.style.width = '100%';
+        }
+
+        function pauseCollapseCountdown() {
+            if (countdownTimer && !isBubbleHovered) {
+                isBubbleHovered = true;
+                clearTimeout(countdownTimer);
+                countdownTimer = null;
+                const elapsed = Date.now() - countdownStartTime;
+                countdownRemaining = Math.max(0, countdownRemaining - elapsed);
+                const computedWidth = collapseProgressBar.getBoundingClientRect().width;
+                const parentWidth = collapseProgressBar.parentElement.getBoundingClientRect().width;
+                const pct = parentWidth > 0 ? (computedWidth / parentWidth) * 100 : 0;
+                collapseProgressBar.style.transition = 'none';
+                collapseProgressBar.style.width = `${pct}%`;
+            }
+        }
+
+        function resumeCollapseCountdown() {
+            if (isBubbleHovered && currentActiveDialogue) {
+                isBubbleHovered = false;
+                if (countdownRemaining > 150) {
+                    runCountdownStep();
+                } else {
+                    condenseCurrentBubble();
+                }
+            }
+        }
+
+        function clearCollapseCountdown() {
+            if (countdownTimer) {
+                clearTimeout(countdownTimer);
+                countdownTimer = null;
+            }
+            isBubbleHovered = false;
+            collapseProgressBar.style.transition = 'none';
+            collapseProgressBar.style.width = '0%';
+        }
+
+        activeDialogBubble.addEventListener('mouseenter', pauseCollapseCountdown);
+        activeDialogBubble.addEventListener('mouseleave', resumeCollapseCountdown);
+        condenseStarBtn.addEventListener('click', () => {
+            condenseCurrentBubble();
         });
 
-        // 发送消息流程
+        function condenseCurrentBubble() {
+            if (!currentActiveDialogue) return;
+            clearCollapseCountdown();
+
+            const bubble = activeDialogBubble;
+            const rect = bubble.getBoundingClientRect();
+            const fromX = rect.left + rect.width / 2;
+            const fromY = rect.top + rect.height / 2;
+
+            const pos = getRandomStarPosition();
+            const toX = (pos.x / 100) * window.innerWidth;
+            const toY = (pos.y / 100) * window.innerHeight;
+            const colorObj = STAR_PALETTE[Math.floor(Math.random() * STAR_PALETTE.length)];
+
+            const starData = {
+                id: currentActiveDialogue.id,
+                userText: currentActiveDialogue.userText,
+                aiText: currentActiveDialogue.aiText,
+                time: currentActiveDialogue.time,
+                x: pos.x,
+                y: pos.y,
+                color: colorObj
+            };
+
+            currentActiveDialogue = null;
+            bubble.classList.add('condensing');
+
+            shootMeteor(fromX, fromY, toX, toY, colorObj, () => {
+                const starEl = createStarElement(starData);
+                starEl.style.animation = 'starBorn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
+                starsContainer.appendChild(starEl);
+
+                starHistory.push(starData);
+                localStorage.setItem('xingcai_star_history', JSON.stringify(starHistory));
+
+                bubble.classList.remove('visible', 'condensing');
+            });
+        }
+
+        // ==========================================
+        // 历史对话查看弹窗
+        // ==========================================
+        function openHistoryBubble(starData) {
+            historyModalTitle.innerHTML = `<span style="color:${starData.color.color};">✦</span> 对话星辰 · <span style="font-size:12px;color:#94a3b8;font-weight:normal;">${starData.time || ''}</span>`;
+            historyUserMsg.innerText = starData.userText;
+            historyAiMsg.innerHTML = formatActionTags(starData.aiText);
+
+            historyReplayBtn.onclick = () => {
+                window.live2dMotionEngine.setSpeaking(true);
+                const matches = starData.aiText.match(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|jacket|skirt1|skirt2)\]/gi);
+                if (matches) {
+                    matches.forEach(t => window.live2dMotionEngine.triggerAction(t.replace(/[\[\]]/g, '')));
+                }
+                setTimeout(() => window.live2dMotionEngine.setSpeaking(false), 3000);
+            };
+
+            historyDeleteBtn.onclick = () => {
+                deleteStar(starData.id);
+                closeHistoryBubble();
+            };
+
+            historyBubbleModal.classList.add('active');
+        }
+
+        function closeHistoryBubble() {
+            historyBubbleModal.classList.remove('active');
+        }
+
+        closeHistoryModalBtn.addEventListener('click', closeHistoryBubble);
+        closeHistoryModalConfirmBtn.addEventListener('click', closeHistoryBubble);
+        historyBubbleModal.addEventListener('click', (e) => {
+            if (e.target === historyBubbleModal) {
+                closeHistoryBubble();
+            }
+        });
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeHistoryBubble();
+                settingsDrawer.classList.remove('active');
+            }
+        });
+
+        // ==========================================
+        // 消息发送与流式响应逻辑
+        // ==========================================
+        function formatActionTags(rawText) {
+            return rawText.replace(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|jacket|skirt1|skirt2)\]/gi, (match) => {
+                return `<span class="action-tag">🏷️ ${match.replace(/[\[\]]/g, '')}</span>`;
+            });
+        }
+
         async function handleSend() {
             const text = chatInput.value.trim();
             if (!text || isGenerating) return;
+
+            // 如果上一段对话还在气泡等待倒计时，立刻收为流星
+            if (currentActiveDialogue) {
+                condenseCurrentBubble();
+            }
 
             chatInput.value = '';
             isGenerating = true;
             sendBtn.disabled = true;
 
-            // 1. 添加用户气泡
-            addUserMessage(text);
+            // 显示当前活跃气泡
+            activeBubbleTitle.innerText = '✨ 交流中...';
+            activeUserText.innerText = text;
+            activeAiText.innerHTML = '<span class="cursor-blink"></span>';
+            clearCollapseCountdown();
+            activeDialogBubble.classList.remove('condensing');
+            activeDialogBubble.classList.add('visible');
+
             chatHistory.push({ role: 'user', content: text });
 
-            // 2. 角色状态：思考中
+            // 角色状态：思考中
             statusBadge.className = 'status-badge speaking';
             statusText.innerText = '星彩正在思考...';
             window.live2dMotionEngine.think(2.0);
 
-            // 3. 如果本地模型在线，发起流式调用；否则使用智能演示回退
             if (isServerOnline) {
                 await sendToLocalLLM();
             } else {
@@ -979,55 +1413,7 @@
         });
         sendBtn.addEventListener('click', handleSend);
 
-        // 渲染用户气泡
-        function addUserMessage(text) {
-            const row = document.createElement('div');
-            row.className = 'msg-row user';
-            const bubble = document.createElement('div');
-            bubble.className = 'msg-bubble';
-            bubble.innerText = text;
-            row.appendChild(bubble);
-            messagesList.appendChild(row);
-            scrollChatToBottom();
-        }
-
-        // 格式化文本中的动作标签，替换为发光徽章
-        function formatActionTags(rawText) {
-            return rawText.replace(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|jacket|skirt1|skirt2)\]/gi, (match) => {
-                return `<span class="action-tag">🏷️ ${match.replace(/[\[\]]/g, '')}</span>`;
-            });
-        }
-
-        // 渲染 AI 气泡
-        function addAIMessage(text, initialActions = []) {
-            const row = document.createElement('div');
-            row.className = 'msg-row ai';
-            const bubble = document.createElement('div');
-            bubble.className = 'msg-bubble';
-            bubble.innerHTML = formatActionTags(text);
-            row.appendChild(bubble);
-            messagesList.appendChild(row);
-            scrollChatToBottom();
-
-            if (initialActions) {
-                initialActions.forEach(act => window.live2dMotionEngine.triggerAction(act));
-            }
-        }
-
-        function scrollChatToBottom() {
-            messagesList.scrollTop = messagesList.scrollHeight;
-        }
-
-        // 连接本地大模型
         async function sendToLocalLLM() {
-            const row = document.createElement('div');
-            row.className = 'msg-row ai';
-            const bubble = document.createElement('div');
-            bubble.className = 'msg-bubble';
-            bubble.innerHTML = '<span class="cursor-blink"></span>';
-            row.appendChild(bubble);
-            messagesList.appendChild(row);
-
             let fullContent = '';
             let parsedTags = new Set();
             window.live2dMotionEngine.setSpeaking(true);
@@ -1038,7 +1424,6 @@
                     chatHistory,
                     (chunk) => {
                         fullContent += chunk;
-                        // 扫描未触发的动作标签
                         const matches = fullContent.match(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|jacket|skirt1|skirt2)\]/gi);
                         if (matches) {
                             for (const tag of matches) {
@@ -1049,41 +1434,31 @@
                                 }
                             }
                         }
-                        bubble.innerHTML = formatActionTags(fullContent) + '<span class="cursor-blink"></span>';
-                        scrollChatToBottom();
+                        activeAiText.innerHTML = formatActionTags(fullContent) + '<span class="cursor-blink"></span>';
                     },
                     () => {
-                        // 完成
-                        bubble.innerHTML = formatActionTags(fullContent);
+                        activeAiText.innerHTML = formatActionTags(fullContent);
                         chatHistory.push({ role: 'assistant', content: fullContent });
+                        onDialogueComplete(chatHistory[chatHistory.length - 2].content, fullContent);
                         resolve();
                     },
                     (err) => {
                         console.warn('本地大模型流式传输中断，切换为演示应答:', err);
                         const fallback = window.localLLMClient.getMockResponse(chatHistory[chatHistory.length - 1].content);
-                        typewriterOutput(bubble, fallback, resolve);
+                        typewriterOutput(fallback, resolve);
                     }
                 );
             });
         }
 
-        // 演示模式打字机回退
         async function sendToMockEngine(userText) {
-            const row = document.createElement('div');
-            row.className = 'msg-row ai';
-            const bubble = document.createElement('div');
-            bubble.className = 'msg-bubble';
-            bubble.innerHTML = '<span class="cursor-blink"></span>';
-            row.appendChild(bubble);
-            messagesList.appendChild(row);
-
             const mockReply = window.localLLMClient.getMockResponse(userText);
             await new Promise((resolve) => {
-                typewriterOutput(bubble, mockReply, resolve);
+                typewriterOutput(mockReply, resolve);
             });
         }
 
-        function typewriterOutput(bubbleElement, fullText, onFinished) {
+        function typewriterOutput(fullText, onFinished) {
             let index = 0;
             let currentText = '';
             let parsedTags = new Set();
@@ -1095,7 +1470,6 @@
                     currentText += fullText[index];
                     index++;
 
-                    // 检测动作标签
                     const matches = currentText.match(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|jacket|skirt1|skirt2)\]/gi);
                     if (matches) {
                         for (const tag of matches) {
@@ -1107,53 +1481,27 @@
                         }
                     }
 
-                    bubbleElement.innerHTML = formatActionTags(currentText) + '<span class="cursor-blink"></span>';
-                    scrollChatToBottom();
+                    activeAiText.innerHTML = formatActionTags(currentText) + '<span class="cursor-blink"></span>';
                 } else {
                     clearInterval(timer);
-                    bubbleElement.innerHTML = formatActionTags(fullText);
+                    activeAiText.innerHTML = formatActionTags(fullText);
                     chatHistory.push({ role: 'assistant', content: fullText });
+                    onDialogueComplete(chatHistory[chatHistory.length - 2].content, fullText);
                     onFinished();
                 }
-            }, 40);
+            }, 38);
         }
 
-        // ==========================================
-        // 动作测试 Drawer 交互
-        // ==========================================
-        openActionDrawerBtn.addEventListener('click', () => {
-            const isActive = actionDrawer.classList.toggle('active');
-            openActionDrawerBtn.classList.toggle('active', isActive);
-        });
-        closeActionDrawerBtn.addEventListener('click', () => {
-            actionDrawer.classList.remove('active');
-            openActionDrawerBtn.classList.remove('active');
-        });
-        closeActionDrawerConfirmBtn.addEventListener('click', () => {
-            actionDrawer.classList.remove('active');
-            openActionDrawerBtn.classList.remove('active');
-        });
-
-        document.querySelectorAll('.action-btn[data-action]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const act = btn.getAttribute('data-action');
-                if (act) {
-                    window.live2dMotionEngine.triggerAction(act);
-                }
-            });
-        });
-
-        let testLipTimer = null;
-        document.getElementById('testLipSyncBtn').addEventListener('click', () => {
-            if (testLipTimer) {
-                clearTimeout(testLipTimer);
-            }
-            window.live2dMotionEngine.setSpeaking(true);
-            window.live2dMotionEngine.smile(3.0);
-            testLipTimer = setTimeout(() => {
-                window.live2dMotionEngine.setSpeaking(false);
-            }, 3000);
-        });
+        function onDialogueComplete(userText, aiText) {
+            activeBubbleTitle.innerText = '✨ 对话完成';
+            currentActiveDialogue = {
+                id: Date.now(),
+                userText: userText,
+                aiText: aiText,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+            startCollapseCountdown();
+        }
 
         // ==========================================
         // 模型设置 Drawer 交互
@@ -1206,20 +1554,6 @@
             initSettingsForm();
             testConnResult.innerText = '已恢复默认设置';
         });
-
-        // 自动化测试辅助钩子 (如 ?test=action_drawer 或 ?test=settings 或 ?test=chat)
-        const urlParams = new URLSearchParams(window.location.search);
-        const testMode = urlParams.get('test');
-        if (testMode === 'action_drawer') {
-            setTimeout(() => openActionDrawerBtn.click(), 2500);
-        } else if (testMode === 'settings') {
-            setTimeout(() => openSettingsBtn.click(), 2500);
-        } else if (testMode === 'chat') {
-            setTimeout(() => {
-                const chip = document.querySelector('.chip[data-prompt*="害羞"]');
-                if (chip) chip.click();
-            }, 2500);
-        }
     </script>
 </body>
 </html>
