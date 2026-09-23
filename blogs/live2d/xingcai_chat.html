@@ -1124,7 +1124,7 @@
 
                 <div class="form-group">
                     <label class="form-label">模型名称 (Model Name)</label>
-                    <input type="text" id="settingModelName" class="form-input" placeholder="qwen2.5:7b">
+                    <input type="text" id="settingModelName" class="form-input" placeholder="qwen2.5:14b">
                 </div>
 
                 <div class="form-group">
@@ -1271,6 +1271,7 @@
             initSettingsForm();
             loadStarHistory();
             await checkServerStatus();
+            initSettingsForm();
         });
 
         function escapeHtml(str) {

@@ -470,7 +470,7 @@ class LocalLLMClient {
 
     loadSettings() {
         this.baseUrl = localStorage.getItem('llm_base_url') || 'http://localhost:11434/v1';
-        this.modelName = localStorage.getItem('llm_model_name') || 'qwen2.5:7b';
+        this.modelName = localStorage.getItem('llm_model_name') || 'qwen2.5:14b';
         this.apiKey = localStorage.getItem('llm_api_key') || '';
         this.temperature = parseFloat(localStorage.getItem('llm_temperature') || '0.7');
         this.systemPrompt = localStorage.getItem('llm_system_prompt') || 
@@ -526,7 +526,15 @@ class LocalLLMClient {
             clearTimeout(timeoutId);
             if (res.ok) {
                 const data = await res.json();
-                return { ok: true, models: data.data || [] };
+                const list = data.data || [];
+                if (list.length > 0) {
+                    const match = list.some(m => m.id === this.modelName);
+                    if (!match) {
+                        this.modelName = list[0].id;
+                        localStorage.setItem('llm_model_name', this.modelName);
+                    }
+                }
+                return { ok: true, models: list };
             }
             return { ok: false, error: 'HTTP ' + res.status };
         } catch (err) {
