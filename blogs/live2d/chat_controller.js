@@ -469,7 +469,7 @@ class LocalLLMClient {
     }
 
     loadSettings() {
-        this.baseUrl = localStorage.getItem('llm_base_url') || 'http://localhost:11434/v1';
+        this.baseUrl = sessionStorage.getItem('llm_active_url') || '';
         this.modelName = localStorage.getItem('llm_model_name') || 'qwen2.5:14b';
         this.apiKey = localStorage.getItem('llm_api_key') || '';
         this.temperature = parseFloat(localStorage.getItem('llm_temperature') || '0.7');
@@ -490,8 +490,8 @@ class LocalLLMClient {
 
     saveSettings(config) {
         if (config.baseUrl !== undefined) {
-            this.baseUrl = config.baseUrl.replace(/\/+$/, '');
-            localStorage.setItem('llm_base_url', this.baseUrl);
+            this.baseUrl = config.baseUrl ? config.baseUrl.replace(/\/+$/, '') : '';
+            sessionStorage.setItem('llm_active_url', this.baseUrl);
         }
         if (config.modelName !== undefined) {
             this.modelName = config.modelName;
@@ -515,9 +515,12 @@ class LocalLLMClient {
      * 检测本地模型健康状态
      */
     async checkHealth() {
+        if (!this.baseUrl) {
+            return { ok: false, error: '未配置或未解锁 API 服务' };
+        }
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 2000);
+            const timeoutId = setTimeout(() => controller.abort(), 3500);
             const res = await fetch(`${this.baseUrl}/models`, {
                 method: 'GET',
                 headers: this.apiKey ? { 'Authorization': `Bearer ${this.apiKey}` } : {},
@@ -546,6 +549,10 @@ class LocalLLMClient {
      * 发送聊天请求 (流式 SSE)
      */
     async chatStream(messages, onChunk, onDone, onError) {
+        if (!this.baseUrl) {
+            onError(new Error('未配置或未解锁 API 服务'));
+            return;
+        }
         const fullMessages = [
             { role: 'system', content: this.systemPrompt },
             ...messages

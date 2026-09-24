@@ -1112,39 +1112,71 @@
     <div class="drawer-overlay" id="settingsDrawer">
         <div class="drawer-box">
             <div class="drawer-header">
-                <span>⚙️ 本地大模型服务设置</span>
+                <span>⚙️ 大模型服务设置</span>
                 <button class="close-btn" id="closeSettingsBtn">×</button>
             </div>
             <div class="drawer-content">
-                <div class="form-group">
-                    <label class="form-label">API 基础地址 (Base URL)</label>
-                    <input type="text" id="settingBaseUrl" class="form-input" placeholder="http://localhost:11434/v1">
-                    <small style="color:#64748b;font-size:12px;">支持 Ollama (11434/v1), LM Studio (1234/v1), vLLM (8000/v1) 等</small>
+                <!-- 1. 脱敏显示区 (锁定状态) -->
+                <div class="form-group" id="groupMaskedUrl">
+                    <label class="form-label">API 地址 (Base URL)</label>
+                    <div style="position:relative;display:flex;align-items:center;">
+                        <input type="text" id="settingBaseUrlMasked" class="form-input" value="••••••••••••••••••••••••" readonly style="width:100%;letter-spacing:3px;color:#94a3b8;background:rgba(255,255,255,0.03);cursor:not-allowed;font-family:monospace;">
+                        <span id="lockBadge" style="position:absolute;right:12px;font-size:12px;color:#38bdf8;display:flex;align-items:center;gap:4px;">
+                            🔒 已加密隐藏
+                        </span>
+                    </div>
+                    <small id="maskedStatusHint" style="color:#64748b;font-size:12px;">已开启安全保护：源码与网页中均无明文，输入密码解锁后方可查看或修改</small>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">模型名称 (Model Name)</label>
-                    <input type="text" id="settingModelName" class="form-input" placeholder="qwen2.5:14b">
+                <!-- 2. 明文/编辑区 (解锁后显示) -->
+                <div class="form-group" id="groupRealUrl" style="display:none;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <label class="form-label">API 地址 (Base URL)</label>
+                        <button type="button" id="toggleUrlPlainBtn" style="background:none;border:none;color:#38bdf8;font-size:12px;cursor:pointer;padding:2px 4px;">👁️ 显示明文</button>
+                    </div>
+                    <input type="password" id="settingBaseUrl" class="form-input" placeholder="http://localhost:11434/v1" autocomplete="off">
+                    <small style="color:#64748b;font-size:12px;">支持 Ollama, LM Studio, vLLM, 远程公网代理等兼容接口</small>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">API Key (若有)</label>
-                    <input type="password" id="settingApiKey" class="form-input" placeholder="可选，本地服务一般无需输入">
+                <!-- 3. 输入密码解锁区 (未解锁时显示) -->
+                <div class="form-group" id="groupUnlockPwd">
+                    <label class="form-label" id="pwdPromptLabel">输入管理密码以查看或更改</label>
+                    <div style="display:flex;gap:8px;">
+                        <input type="password" id="settingPasswordInput" class="form-input" placeholder="输入密码解锁..." style="flex:1;">
+                        <button class="nav-btn" id="unlockSettingsBtn" type="button">🔓 解锁</button>
+                    </div>
+                    <div id="unlockMsg" style="font-size:12px;min-height:18px;margin-top:2px;"></div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">系统 Prompt (包含动作控制指引)</label>
-                    <textarea id="settingSystemPrompt" class="form-textarea" rows="4"></textarea>
+                <!-- 4. 修改密码区 (解锁后显示) -->
+                <div class="form-group" id="groupChangePwd" style="display:none;">
+                    <label class="form-label">更改访问密码 (可选，留空则保持当前密码)</label>
+                    <input type="password" id="settingNewPasswordInput" class="form-input" placeholder="输入新密码 (可选)">
                 </div>
 
-                <div style="display:flex;gap:10px;">
-                    <button class="nav-btn" id="testConnectionBtn">🔍 测试连线与自动发现模型</button>
+                <!-- 5. 测试网络连接区域 -->
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <button class="nav-btn" id="testConnectionBtn" type="button">🔍 测试网络连接</button>
                     <span id="testConnResult" style="font-size:13px;align-self:center;"></span>
+                </div>
+
+                <!-- 6. 源码防泄露密文同步面板 (解锁后可查看密文，便于填入 GitHub 源码) -->
+                <div id="groupGithubSync" style="display:none;background:rgba(255,255,255,0.03);border:1px dashed rgba(56,189,248,0.3);border-radius:10px;padding:12px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                        <span style="font-size:12px;color:#38bdf8;font-weight:600;">📋 GitHub 源码密文（可选）</span>
+                        <button type="button" id="copyCipherBtn" style="background:none;border:none;color:#38bdf8;font-size:12px;cursor:pointer;">复制密文</button>
+                    </div>
+                    <p style="font-size:11px;color:#94a3b8;line-height:1.5;margin-bottom:6px;">
+                        若需把 API 地址安全部署至 GitHub 仓库，可复制此 AES-256 密文填入网页源码中的 <code>window.REPO_ENCRYPTED_API</code>。公开源码绝无明文，只有在网页输入密码才可解密使用。
+                    </p>
+                    <textarea id="cipherOutputText" readonly style="width:100%;height:48px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#cbd5e1;font-size:11px;padding:6px;font-family:monospace;resize:none;"></textarea>
                 </div>
             </div>
             <div class="drawer-footer">
-                <button class="nav-btn" id="resetSettingsBtn">恢复默认</button>
-                <button class="primary-action-btn" id="saveSettingsBtn">保存配置</button>
+                <button class="nav-btn" id="resetSettingsBtn" type="button">清除配置</button>
+                <button class="nav-btn" id="lockNowBtn" type="button" style="display:none;">🔒 立即锁定</button>
+                <button class="primary-action-btn" id="saveSettingsBtn" type="button" style="display:none;">💾 加密保存</button>
+                <button class="primary-action-btn" id="closeSettingsModalBtn" type="button">关闭</button>
             </div>
         </div>
     </div>
@@ -1229,19 +1261,37 @@
         const closeHistoryModalBtn = document.getElementById('closeHistoryModalBtn');
         const closeHistoryModalConfirmBtn = document.getElementById('closeHistoryModalConfirmBtn');
 
-        // 模型设置 Drawer
+        // 模型设置 Drawer 相关 DOM 引用
         const settingsDrawer = document.getElementById('settingsDrawer');
         const openSettingsBtn = document.getElementById('openSettingsBtn');
         const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        const closeSettingsModalBtn = document.getElementById('closeSettingsModalBtn');
         const saveSettingsBtn = document.getElementById('saveSettingsBtn');
         const resetSettingsBtn = document.getElementById('resetSettingsBtn');
+        const lockNowBtn = document.getElementById('lockNowBtn');
         const testConnectionBtn = document.getElementById('testConnectionBtn');
         const testConnResult = document.getElementById('testConnResult');
 
+        const groupMaskedUrl = document.getElementById('groupMaskedUrl');
+        const settingBaseUrlMasked = document.getElementById('settingBaseUrlMasked');
+        const maskedStatusHint = document.getElementById('maskedStatusHint');
+
+        const groupRealUrl = document.getElementById('groupRealUrl');
         const settingBaseUrl = document.getElementById('settingBaseUrl');
-        const settingModelName = document.getElementById('settingModelName');
-        const settingApiKey = document.getElementById('settingApiKey');
-        const settingSystemPrompt = document.getElementById('settingSystemPrompt');
+        const toggleUrlPlainBtn = document.getElementById('toggleUrlPlainBtn');
+
+        const groupUnlockPwd = document.getElementById('groupUnlockPwd');
+        const pwdPromptLabel = document.getElementById('pwdPromptLabel');
+        const settingPasswordInput = document.getElementById('settingPasswordInput');
+        const unlockSettingsBtn = document.getElementById('unlockSettingsBtn');
+        const unlockMsg = document.getElementById('unlockMsg');
+
+        const groupChangePwd = document.getElementById('groupChangePwd');
+        const settingNewPasswordInput = document.getElementById('settingNewPasswordInput');
+
+        const groupGithubSync = document.getElementById('groupGithubSync');
+        const copyCipherBtn = document.getElementById('copyCipherBtn');
+        const cipherOutputText = document.getElementById('cipherOutputText');
 
         // 星辰色彩调色板 (亮色/柔和发光)
         const STAR_PALETTE = [
@@ -1268,10 +1318,17 @@
 
         // 初始化
         window.addEventListener('DOMContentLoaded', async () => {
-            initSettingsForm();
+            // 安全策略：清除旧的明文缓存，优先从 session 中恢复已解密使用的活动地址
+            localStorage.removeItem('llm_base_url');
+            const activeUrl = sessionStorage.getItem('llm_active_url');
+            if (activeUrl) {
+                window.localLLMClient.baseUrl = activeUrl;
+            } else {
+                window.localLLMClient.baseUrl = '';
+            }
+
             loadStarHistory();
             await checkServerStatus();
-            initSettingsForm();
         });
 
         function escapeHtml(str) {
@@ -1279,13 +1336,6 @@
             return str.replace(/[&<>"']/g, (m) => {
                 return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
             });
-        }
-
-        function initSettingsForm() {
-            settingBaseUrl.value = window.localLLMClient.baseUrl;
-            settingModelName.value = window.localLLMClient.modelName;
-            settingApiKey.value = window.localLLMClient.apiKey;
-            settingSystemPrompt.value = window.localLLMClient.systemPrompt;
         }
 
         async function checkServerStatus() {
@@ -2036,55 +2086,322 @@
         }
 
         // ==========================================
+        // 🔐 API 加密安全与密码保护模块 (Web Crypto API - AES-GCM 256)
+        // ==========================================
+        // 预设 GitHub 源码密文（可选）：
+        // 若希望将加密后的 API 地址直接保存在公开 GitHub 仓库中，可将设置框中生成的密文粘贴于此处。
+        // 在公开代码中绝无明文，只有在网页中输入对应密码者才可解密使用。
+        window.REPO_ENCRYPTED_API = "";
+
+        const CryptoService = {
+            async deriveKey(password, salt) {
+                const enc = new TextEncoder();
+                const keyMaterial = await crypto.subtle.importKey(
+                    'raw',
+                    enc.encode(password),
+                    'PBKDF2',
+                    false,
+                    ['deriveKey']
+                );
+                return crypto.subtle.deriveKey(
+                    {
+                        name: 'PBKDF2',
+                        salt: salt,
+                        iterations: 100000,
+                        hash: 'SHA-256'
+                    },
+                    keyMaterial,
+                    { name: 'AES-GCM', length: 256 },
+                    false,
+                    ['encrypt', 'decrypt']
+                );
+            },
+
+            async encrypt(text, password) {
+                const salt = crypto.getRandomValues(new Uint8Array(16));
+                const iv = crypto.getRandomValues(new Uint8Array(12));
+                const key = await this.deriveKey(password, salt);
+                const enc = new TextEncoder();
+                const encrypted = await crypto.subtle.encrypt(
+                    { name: 'AES-GCM', iv: iv },
+                    key,
+                    enc.encode(text)
+                );
+                const payload = {
+                    salt: Array.from(salt),
+                    iv: Array.from(iv),
+                    data: Array.from(new Uint8Array(encrypted))
+                };
+                return btoa(JSON.stringify(payload));
+            },
+
+            async decrypt(cipherBase64, password) {
+                const payload = JSON.parse(atob(cipherBase64));
+                const salt = new Uint8Array(payload.salt);
+                const iv = new Uint8Array(payload.iv);
+                const data = new Uint8Array(payload.data);
+                const key = await this.deriveKey(password, salt);
+                const decrypted = await crypto.subtle.decrypt(
+                    { name: 'AES-GCM', iv: iv },
+                    key,
+                    data
+                );
+                return new TextDecoder().decode(decrypted);
+            }
+        };
+
+        let isSettingsUnlocked = false;
+        let currentSessionPassword = '';
+
+        function getStoredCipher() {
+            return localStorage.getItem('llm_encrypted_payload') || window.REPO_ENCRYPTED_API || '';
+        }
+
+        function updateSettingsModalView() {
+            const cipher = getStoredCipher();
+            const hasConfig = Boolean(cipher);
+
+            testConnResult.innerText = '';
+
+            if (!hasConfig && !isSettingsUnlocked) {
+                // 首次使用，尚未设置任何配置
+                groupMaskedUrl.style.display = 'none';
+                groupRealUrl.style.display = 'flex';
+                groupUnlockPwd.style.display = 'flex';
+                pwdPromptLabel.innerText = '首次配置：请设置访问密码';
+                settingPasswordInput.placeholder = '请设置访问密码...';
+                settingPasswordInput.value = '';
+                unlockSettingsBtn.style.display = 'none';
+                unlockMsg.innerHTML = '<span style="color:#38bdf8;">💡 首次设置：请输入 API 地址并设置管理密码，系统将使用 AES-256 加密存储。</span>';
+                groupChangePwd.style.display = 'none';
+                groupGithubSync.style.display = 'none';
+                lockNowBtn.style.display = 'none';
+                saveSettingsBtn.style.display = 'inline-block';
+                saveSettingsBtn.innerText = '💾 加密保存';
+                settingBaseUrl.value = window.localLLMClient.baseUrl || '';
+                settingBaseUrl.type = 'text';
+                toggleUrlPlainBtn.innerText = '🙈 隐藏明文';
+            } else if (!isSettingsUnlocked) {
+                // 已有配置，处于锁定状态
+                groupMaskedUrl.style.display = 'flex';
+                groupRealUrl.style.display = 'none';
+                groupUnlockPwd.style.display = 'flex';
+                pwdPromptLabel.innerText = '输入管理密码以查看或更改';
+                settingPasswordInput.placeholder = '输入密码解锁...';
+                settingPasswordInput.value = '';
+                unlockSettingsBtn.style.display = 'inline-block';
+                unlockMsg.innerText = '';
+                groupChangePwd.style.display = 'none';
+                groupGithubSync.style.display = 'none';
+                lockNowBtn.style.display = 'none';
+                saveSettingsBtn.style.display = 'none';
+
+                if (window.localLLMClient.baseUrl) {
+                    maskedStatusHint.innerText = '大模型服务已连接就绪。如需查看明文或更改 API 地址，请输入密码解锁。';
+                } else {
+                    maskedStatusHint.innerText = 'API 地址已通过 AES-256 加密隐藏，输入密码解锁后方可连接与使用。';
+                }
+            } else {
+                // 已解锁状态
+                groupMaskedUrl.style.display = 'none';
+                groupRealUrl.style.display = 'flex';
+                groupUnlockPwd.style.display = 'none';
+                groupChangePwd.style.display = 'flex';
+                settingNewPasswordInput.value = '';
+                groupGithubSync.style.display = 'block';
+                cipherOutputText.value = cipher;
+                lockNowBtn.style.display = 'inline-block';
+                saveSettingsBtn.style.display = 'inline-block';
+                saveSettingsBtn.innerText = '💾 加密保存';
+            }
+        }
+
+        async function handleUnlock() {
+            const cipher = getStoredCipher();
+            if (!cipher) return;
+
+            const pwd = settingPasswordInput.value;
+            if (!pwd) {
+                unlockMsg.style.color = '#f87171';
+                unlockMsg.innerText = '请输入管理密码';
+                return;
+            }
+
+            unlockMsg.style.color = '#38bdf8';
+            unlockMsg.innerText = '正在验证密码并解密...';
+
+            try {
+                const decryptedUrl = await CryptoService.decrypt(cipher, pwd);
+                if (!decryptedUrl) {
+                    throw new Error('解密结果为空');
+                }
+
+                currentSessionPassword = pwd;
+                isSettingsUnlocked = true;
+                window.localLLMClient.saveSettings({ baseUrl: decryptedUrl });
+                sessionStorage.setItem('llm_active_url', decryptedUrl);
+
+                settingBaseUrl.value = decryptedUrl;
+                settingBaseUrl.type = 'password';
+                toggleUrlPlainBtn.innerText = '👁️ 显示明文';
+
+                updateSettingsModalView();
+                testConnResult.style.color = '#34d399';
+                testConnResult.innerText = '✅ 密码正确，已解锁！';
+                await checkServerStatus();
+            } catch (err) {
+                console.warn('Decryption failed:', err);
+                unlockMsg.style.color = '#f87171';
+                unlockMsg.innerText = '❌ 密码错误，无法解锁 API 地址';
+            }
+        }
+
+        // ==========================================
         // 模型设置 Drawer 交互
         // ==========================================
         openSettingsBtn.addEventListener('click', () => {
-            initSettingsForm();
-            testConnResult.innerText = '';
+            updateSettingsModalView();
             settingsDrawer.classList.add('active');
         });
-        closeSettingsBtn.addEventListener('click', () => {
+
+        const closeDrawer = () => {
             settingsDrawer.classList.remove('active');
+        };
+        closeSettingsBtn.addEventListener('click', closeDrawer);
+        closeSettingsModalBtn.addEventListener('click', closeDrawer);
+        settingsDrawer.addEventListener('click', (e) => {
+            if (e.target === settingsDrawer) {
+                closeDrawer();
+            }
+        });
+
+        unlockSettingsBtn.addEventListener('click', handleUnlock);
+        settingPasswordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleUnlock();
+            }
+        });
+
+        toggleUrlPlainBtn.addEventListener('click', () => {
+            if (settingBaseUrl.type === 'password') {
+                settingBaseUrl.type = 'text';
+                toggleUrlPlainBtn.innerText = '🙈 隐藏明文';
+            } else {
+                settingBaseUrl.type = 'password';
+                toggleUrlPlainBtn.innerText = '👁️ 显示明文';
+            }
+        });
+
+        lockNowBtn.addEventListener('click', () => {
+            isSettingsUnlocked = false;
+            updateSettingsModalView();
+        });
+
+        saveSettingsBtn.addEventListener('click', async () => {
+            const rawUrl = settingBaseUrl.value.trim();
+            if (!rawUrl) {
+                testConnResult.style.color = '#f87171';
+                testConnResult.innerText = 'API 地址不能为空';
+                return;
+            }
+
+            let pwdToUse = '';
+            const cipher = getStoredCipher();
+            if (!cipher) {
+                pwdToUse = settingPasswordInput.value;
+                if (!pwdToUse) {
+                    unlockMsg.style.color = '#f87171';
+                    unlockMsg.innerText = '首次配置必须设置管理密码！';
+                    settingPasswordInput.focus();
+                    return;
+                }
+            } else {
+                const newPwd = settingNewPasswordInput.value;
+                pwdToUse = newPwd || currentSessionPassword;
+                if (!pwdToUse) {
+                    testConnResult.style.color = '#f87171';
+                    testConnResult.innerText = '未能获取管理密码，请重新输入密码解锁';
+                    return;
+                }
+            }
+
+            try {
+                testConnResult.style.color = '#38bdf8';
+                testConnResult.innerText = '正在加密保存...';
+
+                const newCipher = await CryptoService.encrypt(rawUrl, pwdToUse);
+                localStorage.setItem('llm_encrypted_payload', newCipher);
+                localStorage.removeItem('llm_base_url');
+
+                currentSessionPassword = pwdToUse;
+                window.localLLMClient.saveSettings({ baseUrl: rawUrl });
+                sessionStorage.setItem('llm_active_url', rawUrl);
+
+                isSettingsUnlocked = false;
+                updateSettingsModalView();
+
+                testConnResult.style.color = '#34d399';
+                testConnResult.innerText = '✅ API 地址已使用 AES-256 加密保存！';
+                await checkServerStatus();
+            } catch (err) {
+                testConnResult.style.color = '#f87171';
+                testConnResult.innerText = '❌ 加密保存失败: ' + err.message;
+            }
         });
 
         testConnectionBtn.addEventListener('click', async () => {
             testConnResult.style.color = '#38bdf8';
-            testConnResult.innerText = '正在测试...';
-            window.localLLMClient.saveSettings({
-                baseUrl: settingBaseUrl.value,
-                modelName: settingModelName.value,
-                apiKey: settingApiKey.value
-            });
+            testConnResult.innerText = '正在测试连接...';
+
+            if (isSettingsUnlocked) {
+                const url = settingBaseUrl.value.trim();
+                if (!url) {
+                    testConnResult.style.color = '#f87171';
+                    testConnResult.innerText = '请先填写 API 地址';
+                    return;
+                }
+                window.localLLMClient.saveSettings({ baseUrl: url });
+            } else {
+                if (!window.localLLMClient.baseUrl) {
+                    testConnResult.style.color = '#f87171';
+                    testConnResult.innerText = '未配置或未解锁 API，请先输入密码解锁';
+                    return;
+                }
+            }
+
             const res = await window.localLLMClient.checkHealth();
             if (res.ok) {
                 testConnResult.style.color = '#34d399';
-                testConnResult.innerText = '✅ 连接成功！检测到服务运行中';
+                testConnResult.innerText = '✅ 连接成功！服务正常在线';
                 checkServerStatus();
             } else {
                 testConnResult.style.color = '#f87171';
-                testConnResult.innerText = '❌ 连接失败: ' + res.error;
+                testConnResult.innerText = '❌ 连接失败: ' + (res.error || '无法访问该地址');
             }
         });
 
-        saveSettingsBtn.addEventListener('click', async () => {
-            window.localLLMClient.saveSettings({
-                baseUrl: settingBaseUrl.value,
-                modelName: settingModelName.value,
-                apiKey: settingApiKey.value,
-                systemPrompt: settingSystemPrompt.value
-            });
-            settingsDrawer.classList.remove('active');
-            await checkServerStatus();
+        resetSettingsBtn.addEventListener('click', () => {
+            if (!confirm('确定要清除所有 API 地址加密配置吗？')) return;
+            localStorage.removeItem('llm_encrypted_payload');
+            localStorage.removeItem('llm_base_url');
+            sessionStorage.removeItem('llm_active_url');
+            window.localLLMClient.baseUrl = '';
+            currentSessionPassword = '';
+            isSettingsUnlocked = false;
+            updateSettingsModalView();
+            testConnResult.style.color = '#94a3b8';
+            testConnResult.innerText = '已清除所有本地加密配置';
+            checkServerStatus();
         });
 
-        resetSettingsBtn.addEventListener('click', () => {
-            localStorage.removeItem('llm_base_url');
-            localStorage.removeItem('llm_model_name');
-            localStorage.removeItem('llm_api_key');
-            localStorage.removeItem('llm_system_prompt');
-            window.localLLMClient.loadSettings();
-            initSettingsForm();
-            testConnResult.innerText = '已恢复默认设置';
+        copyCipherBtn.addEventListener('click', () => {
+            cipherOutputText.select();
+            navigator.clipboard.writeText(cipherOutputText.value).then(() => {
+                const oldText = copyCipherBtn.innerText;
+                copyCipherBtn.innerText = '已复制！';
+                setTimeout(() => copyCipherBtn.innerText = oldText, 2000);
+            });
         });
     </script>
 </body>
