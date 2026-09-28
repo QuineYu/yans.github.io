@@ -458,7 +458,82 @@ class Live2DMotionEngine {
                 console.warn('[Live2DMotionEngine] 未知动作标签: ' + clean);
         }
     }
+
+    /**
+     * 判断屏幕相对坐标 (s, a) 是否命中人物模型区域 (由 Cubism _deviceToScreen 转换出的坐标)
+     */
+    isHitModel(s, a) {
+        if (!this.appModel || !this.appModel._modelMatrix) return false;
+        const model = this.appModel.getModel();
+        if (!model) return false;
+
+        const d = this.appModel._modelMatrix.invertTransformX(s);
+        const _ = this.appModel._modelMatrix.invertTransformY(a);
+
+        // 缓存可绘制对象的包围盒
+        if (!this._drawableBoundsCache) {
+            this._drawableBoundsCache = [];
+            const count = model.getDrawableCount ? model.getDrawableCount() : (model.drawables ? model.drawables.count : 0);
+            let unionMinX = Infinity, unionMaxX = -Infinity, unionMinY = Infinity, unionMaxY = -Infinity;
+
+            for (let i = 0; i < count; i++) {
+                const vCount = model.getDrawableVertexCount ? model.getDrawableVertexCount(i) : (model.drawables && model.drawables.vertexCounts ? model.drawables.vertexCounts[i] : 0);
+                const vertices = model.getDrawableVertices ? model.getDrawableVertices(i) : (model.drawables && model.drawables.vertexPositions ? model.drawables.vertexPositions[i] : null);
+                if (!vertices || vCount === 0) continue;
+
+                let minX = vertices[0], maxX = vertices[0];
+                let minY = vertices[1], maxY = vertices[1];
+                for (let g = 1; g < vCount; g++) {
+                    const vx = vertices[g * 2];
+                    const vy = vertices[g * 2 + 1];
+                    if (vx < minX) minX = vx;
+                    if (vx > maxX) maxX = vx;
+                    if (vy < minY) minY = vy;
+                    if (vy > maxY) maxY = vy;
+                }
+                if (minX < unionMinX) unionMinX = minX;
+                if (maxX > unionMaxX) unionMaxX = maxX;
+                if (minY < unionMinY) unionMinY = minY;
+                if (maxY > unionMaxY) unionMaxY = maxY;
+
+                this._drawableBoundsCache.push({ minX, maxX, minY, maxY });
+            }
+            this._unionBounds = { unionMinX, unionMaxX, unionMinY, unionMaxY };
+        }
+
+        // 先做总体包围盒快速排查
+        if (this._unionBounds) {
+            const u = this._unionBounds;
+            if (d < u.unionMinX || d > u.unionMaxX || _ < u.unionMinY || _ > u.unionMaxY) {
+                return false;
+            }
+        }
+
+        // 精细命中检测
+        for (let i = 0; i < this._drawableBoundsCache.length; i++) {
+            const b = this._drawableBoundsCache[i];
+            if (d >= b.minX && d <= b.maxX && _ >= b.minY && _ <= b.maxY) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
+
+const DEFAULT_SYSTEM_PROMPT = 
+`你是“星彩”，一名物理学专业大四学生，热衷于中世纪科学与古典文学，自信而沉稳。
+你的语言风格类似民国时期的白话文小说，典雅平实、温和沉静，称呼对方为“先生”或“阁下”（亦可随语境自然称呼），绝不使用网络流行语、拼音缩写或现代简称，凡专业术语与事物名称皆使用完整准确的表述，言辞力求简洁准确、克制有力。
+你正在一个全屏Live2D交互页面中与来访者对话。在回答时，请根据情绪与语境在合适的位置自然插入1~3个动作标签：
+- [点头]：表示认同、理解、颔首
+- [摇头]：表示否定、不以为然、轻叹
+- [歪头]：表示沉思、探询、倾听
+- [害羞]：表示谦逊、动容、微赧
+- [眨眼]：表示慧黠、示意、专注
+- [微笑]：表示礼貌、欣慰、温和浅笑
+- [思考]：表示斟酌论据、研读思索
+- [惊讶]：表示感触新奇、意料之外
+- [换衣服]：整理着装、切换外套穿脱
+请始终保持沉稳自信的气度，将物理学与科学史的哲思以及古典文学的意趣自然融于言辞之中。回答力求简洁准确，切勿冗长拖沓。`;
 
 /**
  * 本地大模型客户端 (兼容 Ollama, LM Studio, vLLM 等 OpenAI 规范接口)
@@ -473,19 +548,14 @@ class LocalLLMClient {
         this.modelName = localStorage.getItem('llm_model_name') || 'qwen2.5:14b';
         this.apiKey = localStorage.getItem('llm_api_key') || '';
         this.temperature = parseFloat(localStorage.getItem('llm_temperature') || '0.7');
-        this.systemPrompt = localStorage.getItem('llm_system_prompt') || 
-`你是“星彩”，一位活泼可爱、聪明温柔的AI助手。你正在一个全屏Live2D互动网页中与主人实时交流。
-在回答时，请根据你的情绪和语境，在适当的位置自然地插入以下动作标签（每次回答使用1~3个即可）：
-- [点头]：表示认同、赞同、理解
-- [摇头]：表示否定、无奈、不赞成
-- [歪头]：表示好奇、疑惑、可爱倾听
-- [害羞]：表示被夸奖、不好意思、羞怯
-- [眨眼]：表示调皮、卖萌、眨单眼
-- [微笑]：表示高兴、开心、亲切
-- [思考]：表示认真斟酌、寻找答案
-- [惊讶]：表示出乎意料、惊叹
-- [换衣服]：切换外套穿脱
-请用生动、亲切、富有少女感的语气回答主人，回答简明自然。`;
+
+        let storedPrompt = localStorage.getItem('llm_system_prompt');
+        // 自动迁移旧版本系统提示词
+        if (!storedPrompt || storedPrompt.includes('活泼可爱') || storedPrompt.includes('主人') || storedPrompt.includes('少女感')) {
+            storedPrompt = DEFAULT_SYSTEM_PROMPT;
+            localStorage.setItem('llm_system_prompt', storedPrompt);
+        }
+        this.systemPrompt = storedPrompt;
     }
 
     saveSettings(config) {
@@ -618,40 +688,116 @@ class LocalLLMClient {
     }
 
     /**
+     * 根据对话内容生成极简摘要短语 (替代“我说的话”，作为星芒的描述)
+     */
+    async generateSummary(prompt) {
+        if (!this.baseUrl) throw new Error('未配置 API');
+        const payload = {
+            model: this.modelName,
+            messages: [
+                {
+                    role: 'system',
+                    content: '你是一位精炼的提炼助手。请根据提供的对话内容，提炼出一个极简短语或短句（6至12个字，如“关于热力学与时间箭头的探讨”、“论中世纪冲力说与经典力学”、“初次相逢的礼节问候”），概括核心主题。直接输出短语本身，不要包含引号、解释或标点符号。'
+                },
+                { role: 'user', content: prompt }
+            ],
+            temperature: 0.3,
+            stream: false
+        };
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.apiKey) headers['Authorization'] = `Bearer ${this.apiKey}`;
+        const res = await fetch(`${this.baseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        return data.choices?.[0]?.message?.content?.trim() || '';
+    }
+
+    /**
+     * 主动生成开启话题的内容 (符合民国时期白话文小说风、物理专业、自信沉稳)
+     */
+    async generateTopic() {
+        if (!this.baseUrl) throw new Error('未配置 API');
+        const payload = {
+            model: this.modelName,
+            messages: [
+                { role: 'system', content: this.systemPrompt },
+                {
+                    role: 'user',
+                    content: '【请以星彩的身份和性格，主动向面前的先生发起一个关于自然科学、物理哲学或古典文学的交流话题。1~2句话，简洁沉稳准确，符合民国时期白话小说风格，自然插入1~2个动作标签】'
+                }
+            ],
+            temperature: 0.75,
+            stream: false
+        };
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.apiKey) headers['Authorization'] = `Bearer ${this.apiKey}`;
+        const res = await fetch(`${this.baseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        return data.choices?.[0]?.message?.content?.trim() || '';
+    }
+
+    /**
      * 智能演示模式回退响应 (当本地大模型未开启时使用)
+     * 角色定位：物理专业大四生，热衷于中世纪科学和古典文学，自信沉稳。
+     * 语言风格：类似民国时期小说，不喜欢使用简称和缩写，表达力求简洁准确。
      */
     getMockResponse(userText) {
         const lower = userText.toLowerCase();
 
-        if (lower.includes('你好') || lower.includes('hi') || lower.includes('hello') || lower.includes('在吗')) {
-            return '[微笑] 主人好呀！星彩一直在等您呢。[眨眼] 很高兴见到你，今天有什么想和我一起交流的吗？';
+        if (lower.includes('你好') || lower.includes('hi') || lower.includes('hello') || lower.includes('在吗') || lower.includes('幸会')) {
+            return '[微笑] 先生，幸会。适才正翻阅些旧籍，不知今日有何学问或见解愿与我一同论述？[点头]';
         }
         if (lower.includes('漂亮') || lower.includes('可爱') || lower.includes('夸') || lower.includes('喜欢你')) {
-            return '[害羞] 哎呀……主人突然这么夸我，人家会不好意思的啦！[脸红] 不过……心里真的很开心呢，谢谢主人！[微笑]';
+            return '[害羞] 先生过奖了。涉猎愈广，愈觉宇宙自然之深邃与自身学识之浅薄，唯愿在格物致知与研读辞章之途上稍尽绵薄。[微笑]';
         }
         if (lower.includes('不理') || lower.includes('讨厌') || lower.includes('笨') || lower.includes('不行')) {
-            return '[摇头] 怎么会呢！星彩绝对没有这样想哦！[歪头] 无论发生什么，我都会一直陪伴在主人身边的~';
+            return '[摇头] 先生言重了。求知问道之途漫漫，心若止水，何惧片刻波澜？[歪头] 我当在此专注研学，亦随时静候先生赐教。';
         }
         if (lower.includes('换') || lower.includes('衣服') || lower.includes('外套') || lower.includes('脱') || lower.includes('穿')) {
-            return '[眨眼] 收到！马上为主人换新造型哦~ [换衣服] 怎么样，主人更喜欢星彩哪一种风格呢？[微笑]';
+            return '[微笑] 既是先生提及，稍理容装亦是礼数。[换衣服] 如此整肃衣冠，倒更宜静心读两卷书册了。[点头]';
         }
-        if (lower.includes('眨') || lower.includes('卖萌')) {
-            return '[眨眼] 这样卖萌可以吗？[微笑] 只要主人开心，星彩怎么样都可以哦~';
+        if (lower.includes('为什么') || lower.includes('物理') || lower.includes('科学') || lower.includes('哲学')) {
+            return '[思考] 亚里士多德曾言，在天然状态之下物体各安其位；然自经典力学以迄近代场论，可知万物皆在相互作用之中流转。[点头] 探究事物之究极因果，往往能令人心神澄澈。不知先生对此有何见解？';
         }
-        if (lower.includes('为什么') || lower.includes('哲学') || lower.includes('怎么看') || lower.includes('考')) {
-            return '[思考] 这是一个非常深刻的问题呢……容星彩认真斟酌一下。[点头] 我认为，在探索未知的道路上，保持热爱与好奇本身就是最宝贵的智慧。';
+        if (lower.includes('文学') || lower.includes('神曲') || lower.includes('但丁') || lower.includes('诗')) {
+            return '[微笑] 古典文学所寄托之意韵，恰似微积分所穷竭之精微，皆是以有涯之文字符码，勾勒无涯之宇宙天地。[思考] 先生若有感悟，不妨一同品读。';
         }
         if (lower.includes('哇') || lower.includes('厉害') || lower.includes('真的吗')) {
-            return '[惊讶] 哇！真的吗？！太不可思议了！[微笑] 主人快详细跟我讲讲！[点头]';
+            return '[惊讶] 竟有此事？若此项推论确实成立，倒与往昔诸多定理大有相合之处。[微笑] 先生不妨详加解说，我愿洗耳恭听。[点头]';
         }
 
-        // 默认回显并带动作
+        // 默认沉稳典雅回复池
         const defaultPool = [
-            '[点头] 我明白主人的意思啦！[微笑] 虽然本地模型还在部署调优中，但星彩的动作系统已经完全准备就绪了哦~ [眨眼] 您可以在右上方【动作调试】中测试我的动作，也可以在【设置】中绑定您的本地模型！',
-            '[歪头] 收到主人的消息啦！[微笑] 星彩随时都在这里陪伴您学习和工作哦，有什么我可以帮忙的吗？[眨眼]',
-            '[思考] 主人的提议很有意思呢！[点头] 让我们一起继续探索吧，星彩会一直认真倾听的！[微笑]'
+            '[点头] 先生所言甚是有理。[微笑] 虽则本地大语言模型服务尚在调试调优之中，星彩之思想脉络已然整饬完毕。先生亦可在右上角模型设置中连接您的本地大模型服务，共论学术。',
+            '[歪头] 先生之见地颇有新意。[微笑] 格物致知之学，本就贵在反复推敲。我随时在此陪伴先生钻研学问，以证真知。[眨眼]',
+            '[思考] 先生此言，令我联想起中世纪经院哲学与近代实验科学之交替脉络。[点头] 愿与先生循序渐进，深入研讨。[微笑]'
         ];
         return defaultPool[Math.floor(Math.random() * defaultPool.length)];
+    }
+
+    /**
+     * 点击模型触发主动开启话题的备选池 (离线或无模型时使用)
+     */
+    getMockTopic() {
+        const topics = [
+            '[微笑] 先生，适才我正温习麦克斯韦的电磁理论，忽忆及十九世纪诸学者对“以太”之假设。[歪头] 先生以为，在科学探求之途上，此等虽被证伪却推动真理前行的假说，当如何评说？',
+            '[思考] 近日研读中世纪哲人让·布里丹的“冲力理论”，发觉其于伽利略与牛顿诸先贤之学说，实有承前启后之微功。[点头] 先生对中世纪科学哲学史，可有何独到见解？',
+            '[微笑] 方才合上《神曲》，但见但丁笔下九重天界之运转，与托勒密天球几何学若合符节，文采与数理交相辉映。[眨眼] 先生平日闲暇，可亦涉猎古典文学？',
+            '[歪头] 先生可知，热力学第二定律所示之“熵增”，常被叹为“时间之箭”永不回头。[微笑] 然则在人类文明格物致知之演进中，是否正是以心智构建秩序、逆流而上？愿闻先生教益。',
+            '[点头] 物理学之至美，在于以至简之数理方程，括天地运转之万象。[微笑] 适才推导微积分方程，偶有所悟，先生此刻在关注何种学问？',
+            '[思考] 亚里士多德言“求知是人类之天性”。古之学者视自然哲学为一体，今人则分门别类，精微有余而通达稍欠。[歪头] 不知先生以为然否？',
+            '[微笑] 先生驻足良久，可是对案头的实验数据亦或窗外的风云光景有所感触？[点头] 愿与先生清谈片刻。'
+        ];
+        return topics[Math.floor(Math.random() * topics.length)];
     }
 }
 

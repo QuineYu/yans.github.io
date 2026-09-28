@@ -548,20 +548,87 @@
             border: 1px solid rgba(56, 189, 248, 0.4);
             color: #38bdf8;
             border-radius: 12px;
-            padding: 3px 10px;
+            padding: 4px 11px;
             font-size: 12px;
-            cursor: pointer;
+            cursor: var(--app-cursor-pointer);
             transition: all 0.2s ease;
             display: inline-flex;
             align-items: center;
             gap: 4px;
         }
 
-        .condense-btn:hover {
+        .condense-btn:hover:not(:disabled) {
             background: rgba(56, 189, 248, 0.35);
             border-color: rgba(56, 189, 248, 0.7);
             color: #ffffff;
             transform: translateY(-1px);
+        }
+
+        .condense-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .bubble-close-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 18px;
+            line-height: 1;
+            padding: 2px 7px;
+            cursor: var(--app-cursor-pointer);
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bubble-close-btn:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        /* 凝成星芒后置于对话流中的徽章标记 */
+        .star-condensed-badge {
+            align-self: center;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 14px;
+            margin: 6px 0;
+            background: rgba(15, 23, 42, 0.82);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(56, 189, 248, 0.45);
+            border-radius: 20px;
+            font-size: 12px;
+            color: #f1f5f9;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.35s ease-out;
+            cursor: var(--app-cursor-pointer);
+            transition: all 0.2s ease;
+            max-width: 92%;
+            text-align: center;
+        }
+
+        .star-condensed-badge:hover {
+            transform: translateY(-1px);
+            border-color: rgba(56, 189, 248, 0.8);
+            background: rgba(30, 41, 59, 0.95);
+        }
+
+        .star-condensed-badge .star-badge-icon {
+            font-size: 13px;
+        }
+
+        .star-condensed-badge .star-badge-text {
+            font-weight: 500;
+            letter-spacing: 0.2px;
+        }
+
+        .star-condensed-badge .star-badge-star {
+            font-size: 12px;
         }
 
         .active-bubble-body {
@@ -1026,7 +1093,7 @@
             <button class="nav-btn" id="openSettingsBtn" title="配置本地大模型接口">
                 <span>⚙️</span> 模型设置
             </button>
-            <button class="nav-btn" id="clearChatBtn" title="清理夜空中的所有对话星辰">
+            <button class="nav-btn" id="clearChatBtn" title="清理夜空中的所有对话星辰并重置对话记忆">
                 <span>🧹</span> 清理星空
             </button>
         </div>
@@ -1038,26 +1105,22 @@
     <!-- 流星与粒子特效层 -->
     <div id="effectContainer"></div>
 
-    <!-- 当前进行中的对话气泡 (无初始预设文字) -->
+    <!-- 当前进行中的对话气泡 -->
     <div class="active-dialog-bubble" id="activeDialogBubble">
         <div class="active-bubble-header">
             <span class="active-bubble-title" id="activeBubbleTitle">✨ 交流中...</span>
-            <button class="condense-btn" id="condenseStarBtn" title="将当前对话收纳为流星">
-                <span>⭐ 凝成星辰</span>
-            </button>
-        </div>
-        <div class="active-bubble-body" id="activeBubbleBody">
-            <div class="bubble-row user" id="activeUserRow">
-                <div class="bubble-label">🧑 您</div>
-                <div class="bubble-text user" id="activeUserText"></div>
-            </div>
-            <div class="bubble-row ai" id="activeAiRow">
-                <div class="bubble-label">🌸 星彩</div>
-                <div class="bubble-text ai" id="activeAiText"></div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <button class="condense-btn" id="condenseStarBtn" title="将当前对话凝炼为星芒">
+                    <span>⭐ 凝成星芒</span>
+                </button>
+                <button class="bubble-close-btn" id="closeActiveBubbleBtn" title="隐藏对话框">×</button>
             </div>
         </div>
         <div class="bubble-collapse-progress">
             <div class="progress-bar" id="collapseProgressBar"></div>
+        </div>
+        <div class="active-bubble-body" id="activeBubbleBody">
+            <!-- 动态消息流将在此处持续累积，未凝成星芒前均为同一次对话 -->
         </div>
     </div>
 
@@ -1246,9 +1309,9 @@
         // 当前进行中对话气泡
         const activeDialogBubble = document.getElementById('activeDialogBubble');
         const activeBubbleTitle = document.getElementById('activeBubbleTitle');
-        const activeUserText = document.getElementById('activeUserText');
-        const activeAiText = document.getElementById('activeAiText');
+        const activeBubbleBody = document.getElementById('activeBubbleBody');
         const condenseStarBtn = document.getElementById('condenseStarBtn');
+        const closeActiveBubbleBtn = document.getElementById('closeActiveBubbleBtn');
         const collapseProgressBar = document.getElementById('collapseProgressBar');
 
         // 历史对话查看弹窗
@@ -1306,15 +1369,160 @@
         // 状态变量
         let chatHistory = [];
         let starHistory = [];
-        let currentActiveDialogue = null;
+        let currentSessionMessages = []; // 当前对话中的各轮交互记录 [{ role: 'user'|'assistant', content: string, time: string }]
         let isGenerating = false;
+        let isCondensing = false;
         let isServerOnline = false;
 
-        // 倒计时管理
-        let countdownRemaining = 4000;
-        let countdownStartTime = 0;
-        let countdownTimer = null;
-        let isBubbleHovered = false;
+        // ==========================================
+        // 语音合成引擎 (Web Speech API - 实时语音输出与动作口型联动)
+        // ==========================================
+        class XingcaiVoiceEngine {
+            constructor() {
+                this.synth = (typeof window !== 'undefined' && 'speechSynthesis' in window) ? window.speechSynthesis : null;
+                this.selectedVoice = null;
+                this.isSpeaking = false;
+                this.initVoice();
+                if (this.synth && this.synth.onvoiceschanged !== undefined) {
+                    this.synth.onvoiceschanged = () => this.initVoice();
+                }
+            }
+
+            initVoice() {
+                if (!this.synth) return;
+                const voices = this.synth.getVoices();
+                if (!voices || voices.length === 0) return;
+                const zhVoices = voices.filter(v => v.lang && (v.lang.includes('zh') || v.lang.includes('cmn')));
+                let pref = zhVoices.find(v => /xiaoxiao|yaoyao|huihui|xiaoyi|kangkang|chinese female/i.test(v.name));
+                if (!pref) pref = zhVoices.find(v => /female|女/i.test(v.name));
+                if (!pref && zhVoices.length > 0) pref = zhVoices[0];
+                this.selectedVoice = pref || null;
+            }
+
+            cleanText(text) {
+                if (!text) return '';
+                return text
+                    .replace(/<[^>]+>/g, '')
+                    .replace(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|jacket|skirt1|skirt2)\]/gi, '')
+                    .replace(/\[.*?\]/g, '')
+                    .replace(/[*_#`~]/g, '')
+                    .trim();
+            }
+
+            speak(text, onStart, onEnd) {
+                if (!this.synth) {
+                    if (onEnd) onEnd();
+                    return;
+                }
+                const clean = this.cleanText(text);
+                if (!clean) {
+                    if (onEnd) onEnd();
+                    return;
+                }
+                try {
+                    this.synth.cancel();
+                    const utt = new SpeechSynthesisUtterance(clean);
+                    if (this.selectedVoice) utt.voice = this.selectedVoice;
+                    utt.lang = 'zh-CN';
+                    utt.rate = 1.0;
+                    utt.pitch = 1.05;
+
+                    utt.onstart = () => {
+                        this.isSpeaking = true;
+                        if (window.live2dMotionEngine) window.live2dMotionEngine.setSpeaking(true);
+                        if (onStart) onStart();
+                    };
+                    utt.onend = () => {
+                        this.isSpeaking = false;
+                        if (window.live2dMotionEngine) window.live2dMotionEngine.setSpeaking(false);
+                        if (onEnd) onEnd();
+                    };
+                    utt.onerror = () => {
+                        this.isSpeaking = false;
+                        if (window.live2dMotionEngine) window.live2dMotionEngine.setSpeaking(false);
+                        if (onEnd) onEnd();
+                    };
+                    this.synth.speak(utt);
+                } catch (e) {
+                    console.warn('语音播放异常:', e);
+                    if (window.live2dMotionEngine) window.live2dMotionEngine.setSpeaking(false);
+                    if (onEnd) onEnd();
+                }
+            }
+
+            stop() {
+                if (this.synth) {
+                    try { this.synth.cancel(); } catch (e) {}
+                }
+                this.isSpeaking = false;
+                if (window.live2dMotionEngine) window.live2dMotionEngine.setSpeaking(false);
+            }
+        }
+
+        class StreamVoiceSpeaker {
+            constructor(voiceEngine) {
+                this.voiceEngine = voiceEngine;
+                this.spokenLength = 0;
+                this.activeCount = 0;
+            }
+
+            feed(fullText) {
+                if (!this.voiceEngine || !this.voiceEngine.synth) return;
+                const remaining = fullText.slice(this.spokenLength);
+                const sentenceRegex = /([^。！？；!?\n]+[。！？；!?\n])/g;
+                let match;
+                while ((match = sentenceRegex.exec(remaining)) !== null) {
+                    const rawSentence = match[1];
+                    this.spokenLength += rawSentence.length;
+                    const clean = this.voiceEngine.cleanText(rawSentence);
+                    if (clean) {
+                        this.speakSentence(clean);
+                    }
+                }
+            }
+
+            finish(fullText) {
+                if (!this.voiceEngine || !this.voiceEngine.synth) return;
+                const remaining = fullText.slice(this.spokenLength);
+                const clean = this.voiceEngine.cleanText(remaining);
+                if (clean) {
+                    this.speakSentence(clean);
+                }
+            }
+
+            speakSentence(text) {
+                try {
+                    const utt = new SpeechSynthesisUtterance(text);
+                    if (this.voiceEngine.selectedVoice) utt.voice = this.voiceEngine.selectedVoice;
+                    utt.lang = 'zh-CN';
+                    utt.rate = 1.0;
+                    utt.pitch = 1.05;
+
+                    this.activeCount++;
+                    utt.onstart = () => {
+                        if (window.live2dMotionEngine) window.live2dMotionEngine.setSpeaking(true);
+                    };
+                    utt.onend = () => {
+                        this.activeCount = Math.max(0, this.activeCount - 1);
+                        if (this.activeCount === 0 && window.live2dMotionEngine) {
+                            window.live2dMotionEngine.setSpeaking(false);
+                        }
+                    };
+                    utt.onerror = () => {
+                        this.activeCount = Math.max(0, this.activeCount - 1);
+                        if (this.activeCount === 0 && window.live2dMotionEngine) {
+                            window.live2dMotionEngine.setSpeaking(false);
+                        }
+                    };
+                    this.voiceEngine.synth.speak(utt);
+                } catch (e) {
+                    console.warn('流式语音播放异常:', e);
+                }
+            }
+        }
+
+        const voiceEngine = new XingcaiVoiceEngine();
+        window.xingcaiVoiceEngine = voiceEngine;
 
         // 初始化
         window.addEventListener('DOMContentLoaded', async () => {
@@ -1329,6 +1537,7 @@
 
             loadStarHistory();
             await checkServerStatus();
+            initModelInteraction();
         });
 
         function escapeHtml(str) {
@@ -1475,7 +1684,7 @@
             const twinkleDuration = (2.5 + Math.random() * 2).toFixed(1);
             const twinkleDelay = (Math.random() * 3).toFixed(1);
 
-            const shortText = (starData.userText || '').substring(0, 18);
+            const shortText = (starData.summary || starData.userText || '').substring(0, 18);
 
             // 初始坐标立即定位
             const scale = starData.orbitScale || 0.68;
@@ -1661,24 +1870,33 @@
         let isClearingStars = false;
 
         clearChatBtn.addEventListener('click', () => {
-            if (isClearingStars) return;
-            if (starHistory.length === 0 && !currentActiveDialogue) return;
-            if (!confirm('确定要清理夜空中的所有对话星辰吗？')) return;
+            if (isClearingStars || isGenerating || isCondensing) return;
+            if (starHistory.length === 0 && currentSessionMessages.length === 0 && chatHistory.length === 0 && !activeDialogBubble.classList.contains('visible')) return;
+            if (!confirm('确定要清理夜空中的所有对话星辰并重置对话记忆吗？')) return;
 
             isClearingStars = true;
             clearChatBtn.style.opacity = '0.5';
             clearChatBtn.style.pointerEvents = 'none';
 
-            // 1. 若当前有尚未缩成星星的对话气泡，同样化作柔和尘埃消散
-            if (currentActiveDialogue) {
-                clearCollapseCountdown();
+            // 停止当前所有语音播放并关闭历史弹窗
+            if (voiceEngine) {
+                voiceEngine.stop();
+            }
+            closeHistoryBubble();
+
+            // 彻底清理并重置上下文记忆与当前会话
+            chatHistory = [];
+            currentSessionMessages = [];
+
+            // 1. 若当前对话框中有内容，同样化作柔和尘埃消散并清空
+            if (activeDialogBubble.classList.contains('visible')) {
                 const bubble = activeDialogBubble;
                 const rect = bubble.getBoundingClientRect();
                 const bx = rect.left + rect.width / 2;
                 const by = rect.top + rect.height / 2;
                 spawnCosmicDustCloud(bx, by, '#38bdf8', 'rgba(56, 189, 248, 0.6)');
-                bubble.classList.remove('visible', 'condensing');
-                currentActiveDialogue = null;
+                bubble.classList.remove('visible');
+                activeBubbleBody.innerHTML = '';
             }
 
             const starElements = Array.from(starsContainer.querySelectorAll('.sky-star'));
@@ -1710,6 +1928,8 @@
             function finishClear() {
                 starsContainer.innerHTML = '';
                 starHistory = [];
+                chatHistory = [];
+                currentSessionMessages = [];
                 localStorage.removeItem('xingcai_star_history');
                 isClearingStars = false;
                 clearChatBtn.style.opacity = '';
@@ -1783,78 +2003,47 @@
         }
 
         // ==========================================
-        // 当前对话气泡管理与流星收纳
+        // 当前对话气泡管理与星芒凝炼系统
         // ==========================================
-        function startCollapseCountdown() {
-            clearCollapseCountdown();
-            countdownRemaining = 4000;
-            runCountdownStep();
+
+        // 关闭/隐藏当前对话框
+        if (closeActiveBubbleBtn) {
+            closeActiveBubbleBtn.addEventListener('click', () => {
+                activeDialogBubble.classList.remove('visible');
+            });
         }
 
-        function runCountdownStep() {
-            countdownStartTime = Date.now();
-            countdownTimer = setTimeout(() => {
-                condenseCurrentBubble();
-            }, countdownRemaining);
-            collapseProgressBar.style.transition = `width ${countdownRemaining}ms linear`;
-            collapseProgressBar.style.width = '100%';
-        }
-
-        function pauseCollapseCountdown() {
-            if (countdownTimer && !isBubbleHovered) {
-                isBubbleHovered = true;
-                clearTimeout(countdownTimer);
-                countdownTimer = null;
-                const elapsed = Date.now() - countdownStartTime;
-                countdownRemaining = Math.max(0, countdownRemaining - elapsed);
-                const computedWidth = collapseProgressBar.getBoundingClientRect().width;
-                const parentWidth = collapseProgressBar.parentElement.getBoundingClientRect().width;
-                const pct = parentWidth > 0 ? (computedWidth / parentWidth) * 100 : 0;
-                collapseProgressBar.style.transition = 'none';
-                collapseProgressBar.style.width = `${pct}%`;
-            }
-        }
-
-        function resumeCollapseCountdown() {
-            if (isBubbleHovered && currentActiveDialogue) {
-                isBubbleHovered = false;
-                if (countdownRemaining > 150) {
-                    runCountdownStep();
-                } else {
-                    condenseCurrentBubble();
-                }
-            }
-        }
-
-        function clearCollapseCountdown() {
-            if (countdownTimer) {
-                clearTimeout(countdownTimer);
-                countdownTimer = null;
-            }
-            isBubbleHovered = false;
-            collapseProgressBar.style.transition = 'none';
-            collapseProgressBar.style.width = '0%';
-        }
-
-        activeDialogBubble.addEventListener('mouseenter', pauseCollapseCountdown);
-        activeDialogBubble.addEventListener('mouseleave', resumeCollapseCountdown);
+        // 点击“凝成星芒”按钮
         condenseStarBtn.addEventListener('click', () => {
-            condenseCurrentBubble();
+            condenseCurrentSessionToStar();
         });
 
-        function condenseCurrentBubble() {
-            if (!currentActiveDialogue) return;
-            clearCollapseCountdown();
+        /**
+         * 凝炼当前对话为星芒 (需要点击而非自动，未点击则视为同一次对话，凝成星芒后也放在同一个对话框中)
+         */
+        async function condenseCurrentSessionToStar() {
+            if (currentSessionMessages.length === 0 || isCondensing || isGenerating) return;
 
-            const bubble = activeDialogBubble;
-            const rect = bubble.getBoundingClientRect();
+            isCondensing = true;
+            condenseStarBtn.disabled = true;
+            activeBubbleTitle.innerText = '✨ 正在凝炼星芒...';
+
+            // 显示计算进度条 (2400ms 匀速过渡)
+            collapseProgressBar.style.transition = 'width 2400ms cubic-bezier(0.2, 0.8, 0.4, 1)';
+            collapseProgressBar.style.width = '100%';
+
+            // 同时请求/提炼概括短语，并等待进度条动画呈现
+            const summaryPromise = generateDialogueSummary(currentSessionMessages);
+            const waitMinTime = new Promise(resolve => setTimeout(resolve, 2200));
+            const [summary] = await Promise.all([summaryPromise, waitMinTime]);
+
+            // 发射流星至夜空椭圆轨道
+            const rect = condenseStarBtn.getBoundingClientRect();
             const fromX = rect.left + rect.width / 2;
             const fromY = rect.top + rect.height / 2;
 
-            // 选取椭圆轨道参数：缩放比例 k (0.42 ~ 0.94)，初始顺时针方位角 (0 ~ 2PI)
             const orbitScale = 0.42 + Math.random() * 0.52;
             const initialAngle = Math.random() * Math.PI * 2;
-
             const a = orbitScale * orbitBounds.aMax;
             const b = orbitScale * orbitBounds.bMax;
             const toX = orbitBounds.xc + a * Math.cos(initialAngle);
@@ -1862,18 +2051,17 @@
             const colorObj = STAR_PALETTE[Math.floor(Math.random() * STAR_PALETTE.length)];
 
             const starData = {
-                id: currentActiveDialogue.id,
-                userText: currentActiveDialogue.userText,
-                aiText: currentActiveDialogue.aiText,
-                time: currentActiveDialogue.time,
+                id: Date.now(),
+                summary: summary,
+                userText: summary, // 兼容字段
+                messages: [...currentSessionMessages],
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 orbitScale: orbitScale,
                 angle: initialAngle,
                 color: colorObj
             };
 
-            currentActiveDialogue = null;
-            bubble.classList.add('condensing');
-
+            // 发射流星动画并在夜空生成星芒
             shootMeteor(fromX, fromY, toX, toY, colorObj, () => {
                 const starEl = createStarElement(starData);
                 starEl.classList.add('star-newborn');
@@ -1884,26 +2072,137 @@
 
                 starHistory.push(starData);
                 localStorage.setItem('xingcai_star_history', JSON.stringify(starHistory));
-
-                bubble.classList.remove('visible', 'condensing');
             });
+
+            // 在同一个对话框中插入凝成星芒的优雅标记卡片
+            const badgeEl = document.createElement('div');
+            badgeEl.className = 'star-condensed-badge';
+            badgeEl.style.borderColor = colorObj.color;
+            badgeEl.style.boxShadow = `0 0 14px ${colorObj.glow}`;
+            badgeEl.title = '点击重温本次星芒记忆';
+            badgeEl.innerHTML = `
+                <span class="star-badge-icon" style="color:${colorObj.color};">✦</span>
+                <span class="star-badge-text">已凝成星芒 · “${escapeHtml(summary)}”</span>
+                <span class="star-badge-star" style="color:${colorObj.color};">⭐</span>
+            `;
+            badgeEl.addEventListener('click', () => {
+                openHistoryBubble(starData);
+            });
+            activeBubbleBody.appendChild(badgeEl);
+            activeBubbleBody.scrollTop = activeBubbleBody.scrollHeight;
+
+            // 复位进度条与按钮状态，清空当前会话队列以开启后续交流
+            collapseProgressBar.style.transition = 'none';
+            collapseProgressBar.style.width = '0%';
+            activeBubbleTitle.innerText = '✨ 交流中...';
+            condenseStarBtn.disabled = false;
+            currentSessionMessages = [];
+            isCondensing = false;
+        }
+
+        /**
+         * 根据对话内容生成极简描述短语 (替代“我说的话”，作为星芒的描述)
+         */
+        async function generateDialogueSummary(sessionMessages) {
+            if (!sessionMessages || sessionMessages.length === 0) {
+                return '片刻思绪';
+            }
+
+            if (isServerOnline) {
+                try {
+                    const text = sessionMessages
+                        .map(m => (m.role === 'user' ? '用户: ' : '星彩: ') + voiceEngine.cleanText(m.content))
+                        .join('\n');
+                    const res = await window.localLLMClient.generateSummary(text);
+                    if (res && res.trim()) {
+                        const clean = res.trim()
+                            .replace(/^["'“‘【《]|["'”’】》]$/g, '')
+                            .replace(/[。！？\n]/g, '')
+                            .slice(0, 16);
+                        if (clean) return clean;
+                    }
+                } catch (e) {
+                    console.warn('在线生成短语失败，切换为规则提炼:', e);
+                }
+            }
+
+            return extractRuleBasedSummary(sessionMessages);
+        }
+
+        function extractRuleBasedSummary(sessionMessages) {
+            const allText = sessionMessages.map(m => m.content).join(' ');
+
+            if (/以太|麦克斯韦|电磁|电|磁/i.test(allText)) return '麦克斯韦电磁理论之辨';
+            if (/冲力|布里丹|伽利略|落体/i.test(allText)) return '中世纪冲力说与经典力学';
+            if (/神曲|但丁|托勒密|天体|天球/i.test(allText)) return '《神曲》九重天界与天体模型';
+            if (/熵|热力学|时间之箭|混沌|无序/i.test(allText)) return '热力学第二定律与时间之箭';
+            if (/力学|牛顿|引力|重力|万有引力/i.test(allText)) return '经典力学体系与引力之思';
+            if (/量子|波函数|薛定谔|不确定/i.test(allText)) return '微观量子世界与波动之论';
+            if (/亚里士多德|经院|自然哲学/i.test(allText)) return '亚里士多德与自然哲学辨析';
+            if (/文学|古典|诗|辞章/i.test(allText)) return '古典文学与辞章意趣品读';
+            if (/衣服|外套|换衣服|装束|容装/i.test(allText)) return '关于衣着整肃之闲谈';
+            if (/你好|幸会|初见|在吗/i.test(allText)) return '初晤论道之浅谈问候';
+
+            for (const m of sessionMessages) {
+                const clean = voiceEngine.cleanText(m.content);
+                if (clean.length >= 4) {
+                    return clean.slice(0, 12) + (clean.length > 12 ? '...' : '');
+                }
+            }
+            return '格物致知片刻沉思';
         }
 
         // ==========================================
         // 历史对话查看弹窗
         // ==========================================
         function openHistoryBubble(starData) {
-            historyModalTitle.innerHTML = `<span style="color:${starData.color.color};">✦</span> 对话星辰 · <span style="font-size:12px;color:#94a3b8;font-weight:normal;">${starData.time || ''}</span>`;
-            historyUserMsg.innerText = starData.userText;
-            historyAiMsg.innerHTML = formatActionTags(starData.aiText);
+            const summaryTitle = starData.summary || starData.userText || '对话记忆';
+            historyModalTitle.innerHTML = `<span style="color:${starData.color.color};">✦</span> 记忆星芒 · <span style="font-size:13px;color:#38bdf8;font-weight:600;">“${escapeHtml(summaryTitle)}”</span> <span style="font-size:12px;color:#94a3b8;font-weight:normal;">(${starData.time || ''})</span>`;
+
+            const historyBody = historyBubbleModal.querySelector('.history-card-body');
+            historyBody.innerHTML = '';
+
+            // 多轮对话全部渲染展示
+            if (starData.messages && Array.isArray(starData.messages) && starData.messages.length > 0) {
+                starData.messages.forEach(msg => {
+                    const row = document.createElement('div');
+                    row.className = `bubble-row ${msg.role === 'user' ? 'user' : 'ai'}`;
+                    row.innerHTML = `
+                        <div class="bubble-label">${msg.role === 'user' ? '🧑 您' : '🌸 星彩'} ${msg.time ? '· ' + msg.time : ''}</div>
+                        <div class="bubble-text ${msg.role === 'user' ? 'user' : 'ai'}">${msg.role === 'user' ? escapeHtml(msg.content) : formatActionTags(msg.content)}</div>
+                    `;
+                    historyBody.appendChild(row);
+                });
+            } else {
+                // 兼容旧版记录
+                historyBody.innerHTML = `
+                    <div class="bubble-row user">
+                        <div class="bubble-label">🧑 您</div>
+                        <div class="bubble-text user">${escapeHtml(starData.userText || '')}</div>
+                    </div>
+                    <div class="bubble-row ai">
+                        <div class="bubble-label">🌸 星彩</div>
+                        <div class="bubble-text ai">${formatActionTags(starData.aiText || '')}</div>
+                    </div>
+                `;
+            }
 
             historyReplayBtn.onclick = () => {
-                window.live2dMotionEngine.setSpeaking(true);
-                const matches = starData.aiText.match(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|jacket|skirt1|skirt2)\]/gi);
-                if (matches) {
-                    matches.forEach(t => window.live2dMotionEngine.triggerAction(t.replace(/[\[\]]/g, '')));
+                let lastAiMsg = '';
+                if (starData.messages && starData.messages.length > 0) {
+                    const aiMsgs = starData.messages.filter(m => m.role === 'assistant');
+                    if (aiMsgs.length > 0) lastAiMsg = aiMsgs[aiMsgs.length - 1].content;
+                } else {
+                    lastAiMsg = starData.aiText || '';
                 }
-                setTimeout(() => window.live2dMotionEngine.setSpeaking(false), 3000);
+
+                if (lastAiMsg) {
+                    const matches = lastAiMsg.match(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|jacket|skirt1|skirt2)\]/gi);
+                    if (matches) {
+                        matches.forEach(t => window.live2dMotionEngine.triggerAction(t.replace(/[\[\]]/g, '')));
+                    }
+                    voiceEngine.speak(lastAiMsg);
+                }
             };
 
             historyDeleteBtn.onclick = () => {
@@ -1933,7 +2232,7 @@
         });
 
         // ==========================================
-        // 消息发送与流式响应逻辑
+        // 消息发送、流式响应与语音同步输出逻辑
         // ==========================================
         function formatActionTags(rawText) {
             return rawText.replace(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|jacket|skirt1|skirt2)\]/gi, (match) => {
@@ -1941,28 +2240,50 @@
             });
         }
 
+        function appendUserMessage(text, time) {
+            const row = document.createElement('div');
+            row.className = 'bubble-row user';
+            row.innerHTML = `
+                <div class="bubble-label">🧑 您 · ${time}</div>
+                <div class="bubble-text user">${escapeHtml(text)}</div>
+            `;
+            activeBubbleBody.appendChild(row);
+            activeBubbleBody.scrollTop = activeBubbleBody.scrollHeight;
+        }
+
+        function createAiMessageRow(time) {
+            const row = document.createElement('div');
+            row.className = 'bubble-row ai';
+            row.innerHTML = `
+                <div class="bubble-label">🌸 星彩 · ${time}</div>
+                <div class="bubble-text ai"><span class="cursor-blink"></span></div>
+            `;
+            activeBubbleBody.appendChild(row);
+            activeBubbleBody.scrollTop = activeBubbleBody.scrollHeight;
+            return { row, textEl: row.querySelector('.bubble-text.ai') };
+        }
+
         async function handleSend() {
             const text = chatInput.value.trim();
             if (!text || isGenerating) return;
-
-            // 如果上一段对话还在气泡等待倒计时，立刻收为流星
-            if (currentActiveDialogue) {
-                condenseCurrentBubble();
-            }
 
             chatInput.value = '';
             isGenerating = true;
             sendBtn.disabled = true;
 
-            // 显示当前活跃气泡
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            // 确保对话气泡显示
             activeBubbleTitle.innerText = '✨ 交流中...';
-            activeUserText.innerText = text;
-            activeAiText.innerHTML = '<span class="cursor-blink"></span>';
-            clearCollapseCountdown();
-            activeDialogBubble.classList.remove('condensing');
             activeDialogBubble.classList.add('visible');
 
+            // 添加用户消息到会话流
+            appendUserMessage(text, time);
+            currentSessionMessages.push({ role: 'user', content: text, time: time });
             chatHistory.push({ role: 'user', content: text });
+
+            // 创建星彩回复占位
+            const { textEl } = createAiMessageRow(time);
 
             // 角色状态：思考中
             statusBadge.className = 'status-badge speaking';
@@ -1970,9 +2291,9 @@
             window.live2dMotionEngine.think(2.0);
 
             if (isServerOnline) {
-                await sendToLocalLLM();
+                await sendToLocalLLM(textEl, time);
             } else {
-                await sendToMockEngine(text);
+                await sendToMockEngine(text, textEl, time);
             }
 
             isGenerating = false;
@@ -1984,7 +2305,6 @@
                 statusBadge.className = 'status-badge offline';
                 statusText.innerText = '演示模式 (本地模型离线)';
             }
-            window.live2dMotionEngine.setSpeaking(false);
         }
 
         chatInput.addEventListener('keydown', (e) => {
@@ -1995,11 +2315,12 @@
         });
         sendBtn.addEventListener('click', handleSend);
 
-        async function sendToLocalLLM() {
+        async function sendToLocalLLM(textEl, time) {
             let fullContent = '';
             let parsedTags = new Set();
-            window.live2dMotionEngine.setSpeaking(true);
             statusText.innerText = '星彩正在回复...';
+
+            const streamSpeaker = new StreamVoiceSpeaker(voiceEngine);
 
             await new Promise((resolve) => {
                 window.localLLMClient.chatStream(
@@ -2016,36 +2337,43 @@
                                 }
                             }
                         }
-                        activeAiText.innerHTML = formatActionTags(fullContent) + '<span class="cursor-blink"></span>';
+                        textEl.innerHTML = formatActionTags(fullContent) + '<span class="cursor-blink"></span>';
+                        activeBubbleBody.scrollTop = activeBubbleBody.scrollHeight;
+                        // 实时语音输出
+                        streamSpeaker.feed(fullContent);
                     },
                     () => {
-                        activeAiText.innerHTML = formatActionTags(fullContent);
+                        streamSpeaker.finish(fullContent);
+                        textEl.innerHTML = formatActionTags(fullContent);
+                        currentSessionMessages.push({ role: 'assistant', content: fullContent, time: time });
                         chatHistory.push({ role: 'assistant', content: fullContent });
-                        onDialogueComplete(chatHistory[chatHistory.length - 2].content, fullContent);
+                        activeBubbleBody.scrollTop = activeBubbleBody.scrollHeight;
                         resolve();
                     },
                     (err) => {
                         console.warn('本地大模型流式传输中断，切换为演示应答:', err);
                         const fallback = window.localLLMClient.getMockResponse(chatHistory[chatHistory.length - 1].content);
-                        typewriterOutput(fallback, resolve);
+                        typewriterOutput(fallback, textEl, time, resolve);
                     }
                 );
             });
         }
 
-        async function sendToMockEngine(userText) {
+        async function sendToMockEngine(userText, textEl, time) {
             const mockReply = window.localLLMClient.getMockResponse(userText);
             await new Promise((resolve) => {
-                typewriterOutput(mockReply, resolve);
+                typewriterOutput(mockReply, textEl, time, resolve);
             });
         }
 
-        function typewriterOutput(fullText, onFinished) {
+        function typewriterOutput(fullText, textEl, time, onFinished) {
             let index = 0;
             let currentText = '';
             let parsedTags = new Set();
-            window.live2dMotionEngine.setSpeaking(true);
             statusText.innerText = '星彩正在回复...';
+
+            // 文字输出的同时输出语音
+            voiceEngine.speak(fullText);
 
             const timer = setInterval(() => {
                 if (index < fullText.length) {
@@ -2063,26 +2391,150 @@
                         }
                     }
 
-                    activeAiText.innerHTML = formatActionTags(currentText) + '<span class="cursor-blink"></span>';
+                    textEl.innerHTML = formatActionTags(currentText) + '<span class="cursor-blink"></span>';
+                    activeBubbleBody.scrollTop = activeBubbleBody.scrollHeight;
                 } else {
                     clearInterval(timer);
-                    activeAiText.innerHTML = formatActionTags(fullText);
+                    textEl.innerHTML = formatActionTags(fullText);
+                    currentSessionMessages.push({ role: 'assistant', content: fullText, time: time });
                     chatHistory.push({ role: 'assistant', content: fullText });
-                    onDialogueComplete(chatHistory[chatHistory.length - 2].content, fullText);
+                    activeBubbleBody.scrollTop = activeBubbleBody.scrollHeight;
                     onFinished();
                 }
             }, 38);
         }
 
-        function onDialogueComplete(userText, aiText) {
-            activeBubbleTitle.innerText = '✨ 对话完成';
-            currentActiveDialogue = {
-                id: Date.now(),
-                userText: userText,
-                aiText: aiText,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-            startCollapseCountdown();
+        // ==========================================
+        // 光标点击人物模型区域自行开启话题系统
+        // ==========================================
+        async function triggerCharacterInitiateTopic() {
+            if (isGenerating || isCondensing) return;
+
+            // 触发模型随机肢体动作 (微笑/歪头/思考/点头)
+            const actions = ['smile', 'tilt', 'think', 'nod', 'wink'];
+            const act = actions[Math.floor(Math.random() * actions.length)];
+            window.live2dMotionEngine.triggerAction(act);
+
+            // 展开对话框
+            activeDialogBubble.classList.add('visible');
+            activeBubbleTitle.innerText = '✨ 交流中...';
+
+            isGenerating = true;
+            sendBtn.disabled = true;
+            statusBadge.className = 'status-badge speaking';
+            statusText.innerText = '星彩发起话题...';
+
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const { textEl } = createAiMessageRow(time);
+
+            if (isServerOnline) {
+                try {
+                    const topic = await window.localLLMClient.generateTopic();
+                    if (topic && topic.trim()) {
+                        await new Promise((resolve) => {
+                            typewriterOutput(topic.trim(), textEl, time, resolve);
+                        });
+                    } else {
+                        const fallback = window.localLLMClient.getMockTopic();
+                        await new Promise((resolve) => {
+                            typewriterOutput(fallback, textEl, time, resolve);
+                        });
+                    }
+                } catch (e) {
+                    console.warn('在线开启话题失败，使用离线话题库:', e);
+                    const fallback = window.localLLMClient.getMockTopic();
+                    await new Promise((resolve) => {
+                        typewriterOutput(fallback, textEl, time, resolve);
+                    });
+                }
+            } else {
+                const mockTopic = window.localLLMClient.getMockTopic();
+                await new Promise((resolve) => {
+                    typewriterOutput(mockTopic, textEl, time, resolve);
+                });
+            }
+
+            isGenerating = false;
+            sendBtn.disabled = false;
+            if (isServerOnline) {
+                statusBadge.className = 'status-badge';
+                statusText.innerText = '本地大模型已连接';
+            } else {
+                statusBadge.className = 'status-badge offline';
+                statusText.innerText = '演示模式 (本地模型离线)';
+            }
+        }
+
+        function initModelInteraction() {
+            const canvas = document.querySelector('canvas');
+            if (!canvas) {
+                setTimeout(initModelInteraction, 400);
+                return;
+            }
+
+            let pointerStartX = 0;
+            let pointerStartY = 0;
+            let pointerStartTime = 0;
+
+            function getScreenCoords(clientX, clientY) {
+                const view = window.LAppDelegate && window.LAppDelegate.getInstance().getView();
+                if (view && view._deviceToScreen) {
+                    const dpr = window.devicePixelRatio || 1;
+                    const s = view.transformScreenX(clientX * dpr);
+                    const a = view.transformScreenY(clientY * dpr);
+                    return { s, a };
+                }
+                return null;
+            }
+
+            // 悬停在人物模型区域时光标变为手型 (pointer)
+            window.addEventListener('mousemove', (e) => {
+                if (e.target.closest && (e.target.closest('.top-navbar') || e.target.closest('.active-dialog-bubble') || e.target.closest('.bottom-dock') || e.target.closest('.drawer-overlay') || e.target.closest('.history-bubble-overlay') || e.target.closest('.sky-star'))) {
+                    document.body.style.cursor = '';
+                    return;
+                }
+                const coords = getScreenCoords(e.clientX, e.clientY);
+                if (coords && window.live2dMotionEngine && window.live2dMotionEngine.isHitModel(coords.s, coords.a)) {
+                    document.body.style.cursor = 'var(--app-cursor-pointer)';
+                } else {
+                    document.body.style.cursor = '';
+                }
+            }, { passive: true });
+
+            canvas.addEventListener('pointerdown', (e) => {
+                pointerStartX = e.clientX;
+                pointerStartY = e.clientY;
+                pointerStartTime = Date.now();
+            }, { passive: true });
+
+            canvas.addEventListener('pointerup', (e) => {
+                const dist = Math.hypot(e.clientX - pointerStartX, e.clientY - pointerStartY);
+                const duration = Date.now() - pointerStartTime;
+                // 单击且位移小于10px判定为点击人物
+                if (dist < 10 && duration < 500) {
+                    const coords = getScreenCoords(e.clientX, e.clientY);
+                    if (coords && window.live2dMotionEngine && window.live2dMotionEngine.isHitModel(coords.s, coords.a)) {
+                        triggerCharacterInitiateTopic();
+                    }
+                }
+            }, { passive: true });
+
+            // 同时挂钩 LAppLive2DManager 的 onTap 回调作为双重保障
+            const checkMgrTimer = setInterval(() => {
+                if (window.LAppLive2DManager) {
+                    const mgr = window.LAppLive2DManager.getInstance();
+                    if (mgr && mgr.onTap) {
+                        const originalOnTap = mgr.onTap.bind(mgr);
+                        mgr.onTap = function(s, a) {
+                            originalOnTap(s, a);
+                            if (window.live2dMotionEngine && window.live2dMotionEngine.isHitModel(s, a)) {
+                                triggerCharacterInitiateTopic();
+                            }
+                        };
+                        clearInterval(checkMgrTimer);
+                    }
+                }
+            }, 300);
         }
 
         // ==========================================
