@@ -1159,7 +1159,7 @@
     <!-- 底部固定输入区 (无任何预设文字提示) -->
     <div class="bottom-dock">
         <div class="input-bar">
-            <input type="text" id="chatInput" class="input-field" placeholder="" autocomplete="off">
+            <input type="text" id="chatInput" name="chat_talk_content" class="input-field" placeholder="" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true">
             <button id="sendBtn" class="send-btn" title="发送消息 (Enter)">
                 <span class="send-btn-icon">
                     <svg viewBox="0 0 24 24">
@@ -1178,63 +1178,68 @@
                 <span>⚙️ 大模型服务设置</span>
                 <button class="close-btn" id="closeSettingsBtn">×</button>
             </div>
-            <div class="drawer-content">
-                <!-- 1. 脱敏显示区 (锁定状态) -->
-                <div class="form-group" id="groupMaskedUrl">
-                    <label class="form-label">API 地址 (Base URL)</label>
-                    <div style="position:relative;display:flex;align-items:center;">
-                        <input type="text" id="settingBaseUrlMasked" class="form-input" value="••••••••••••••••••••••••" readonly style="width:100%;letter-spacing:3px;color:#94a3b8;background:rgba(255,255,255,0.03);cursor:not-allowed;font-family:monospace;">
-                        <span id="lockBadge" style="position:absolute;right:12px;font-size:12px;color:#38bdf8;display:flex;align-items:center;gap:4px;">
-                            🔒 已加密隐藏
-                        </span>
-                    </div>
-                    <small id="maskedStatusHint" style="color:#64748b;font-size:12px;">已开启安全保护：源码与网页中均无明文，输入密码解锁后方可查看或修改</small>
-                </div>
-
-                <!-- 2. 明文/编辑区 (解锁后显示) -->
-                <div class="form-group" id="groupRealUrl" style="display:none;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;">
+            <form autocomplete="off" onsubmit="return false;" style="display:contents;">
+                <!-- 诱捕浏览器自动填充，防止将 API 地址错误联想至外部聊天输入框 -->
+                <input type="text" name="fake_username_trap" style="display:none;" tabindex="-1" autocomplete="username">
+                <input type="password" name="fake_password_trap" style="display:none;" tabindex="-1" autocomplete="current-password">
+                <div class="drawer-content">
+                    <!-- 1. 脱敏显示区 (锁定状态) -->
+                    <div class="form-group" id="groupMaskedUrl">
                         <label class="form-label">API 地址 (Base URL)</label>
-                        <button type="button" id="toggleUrlPlainBtn" style="background:none;border:none;color:#38bdf8;font-size:12px;cursor:pointer;padding:2px 4px;">👁️ 显示明文</button>
+                        <div style="position:relative;display:flex;align-items:center;">
+                            <input type="text" id="settingBaseUrlMasked" class="form-input" value="••••••••••••••••••••••••" readonly style="width:100%;letter-spacing:3px;color:#94a3b8;background:rgba(255,255,255,0.03);cursor:not-allowed;font-family:monospace;">
+                            <span id="lockBadge" style="position:absolute;right:12px;font-size:12px;color:#38bdf8;display:flex;align-items:center;gap:4px;">
+                                🔒 已加密隐藏
+                            </span>
+                        </div>
+                        <small id="maskedStatusHint" style="color:#64748b;font-size:12px;">已开启安全保护：源码与网页中均无明文，输入密码解锁后方可查看或修改</small>
                     </div>
-                    <input type="password" id="settingBaseUrl" class="form-input" placeholder="http://localhost:11434/v1" autocomplete="off">
-                    <small style="color:#64748b;font-size:12px;">支持 Ollama, LM Studio, vLLM, 远程公网代理等兼容接口</small>
-                </div>
 
-                <!-- 3. 输入密码解锁区 (未解锁时显示) -->
-                <div class="form-group" id="groupUnlockPwd">
-                    <label class="form-label" id="pwdPromptLabel">输入管理密码以查看或更改</label>
-                    <div style="display:flex;gap:8px;">
-                        <input type="password" id="settingPasswordInput" class="form-input" placeholder="输入密码解锁..." style="flex:1;">
-                        <button class="nav-btn" id="unlockSettingsBtn" type="button">🔓 解锁</button>
+                    <!-- 2. 明文/编辑区 (解锁后显示) -->
+                    <div class="form-group" id="groupRealUrl" style="display:none;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <label class="form-label">API 地址 (Base URL)</label>
+                            <button type="button" id="toggleUrlPlainBtn" style="background:none;border:none;color:#38bdf8;font-size:12px;cursor:pointer;padding:2px 4px;">👁️ 显示明文</button>
+                        </div>
+                        <input type="password" id="settingBaseUrl" class="form-input" placeholder="http://localhost:11434/v1" autocomplete="off">
+                        <small style="color:#64748b;font-size:12px;">支持 Ollama, LM Studio, vLLM, 远程公网代理等兼容接口</small>
                     </div>
-                    <div id="unlockMsg" style="font-size:12px;min-height:18px;margin-top:2px;"></div>
-                </div>
 
-                <!-- 4. 修改密码区 (解锁后显示) -->
-                <div class="form-group" id="groupChangePwd" style="display:none;">
-                    <label class="form-label">更改访问密码 (可选，留空则保持当前密码)</label>
-                    <input type="password" id="settingNewPasswordInput" class="form-input" placeholder="输入新密码 (可选)">
-                </div>
-
-                <!-- 5. 测试网络连接区域 -->
-                <div style="display:flex;gap:10px;align-items:center;">
-                    <button class="nav-btn" id="testConnectionBtn" type="button">🔍 测试网络连接</button>
-                    <span id="testConnResult" style="font-size:13px;align-self:center;"></span>
-                </div>
-
-                <!-- 6. 源码防泄露密文同步面板 (解锁后可查看密文，便于填入 GitHub 源码) -->
-                <div id="groupGithubSync" style="display:none;background:rgba(255,255,255,0.03);border:1px dashed rgba(56,189,248,0.3);border-radius:10px;padding:12px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                        <span style="font-size:12px;color:#38bdf8;font-weight:600;">📋 GitHub 源码密文（可选）</span>
-                        <button type="button" id="copyCipherBtn" style="background:none;border:none;color:#38bdf8;font-size:12px;cursor:pointer;">复制密文</button>
+                    <!-- 3. 输入密码解锁区 (未解锁时显示) -->
+                    <div class="form-group" id="groupUnlockPwd">
+                        <label class="form-label" id="pwdPromptLabel">输入管理密码以查看或更改</label>
+                        <div style="display:flex;gap:8px;">
+                            <input type="password" id="settingPasswordInput" class="form-input" placeholder="输入密码解锁..." style="flex:1;">
+                            <button class="nav-btn" id="unlockSettingsBtn" type="button">🔓 解锁</button>
+                        </div>
+                        <div id="unlockMsg" style="font-size:12px;min-height:18px;margin-top:2px;"></div>
                     </div>
-                    <p style="font-size:11px;color:#94a3b8;line-height:1.5;margin-bottom:6px;">
-                        若需把 API 地址安全部署至 GitHub 仓库，可复制此 AES-256 密文填入网页源码中的 <code>window.REPO_ENCRYPTED_API</code>。公开源码绝无明文，只有在网页输入密码才可解密使用。
-                    </p>
-                    <textarea id="cipherOutputText" readonly style="width:100%;height:48px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#cbd5e1;font-size:11px;padding:6px;font-family:monospace;resize:none;"></textarea>
+
+                    <!-- 4. 修改密码区 (解锁后显示) -->
+                    <div class="form-group" id="groupChangePwd" style="display:none;">
+                        <label class="form-label">更改访问密码 (可选，留空则保持当前密码)</label>
+                        <input type="password" id="settingNewPasswordInput" class="form-input" placeholder="输入新密码 (可选)">
+                    </div>
+
+                    <!-- 5. 测试网络连接区域 -->
+                    <div style="display:flex;gap:10px;align-items:center;">
+                        <button class="nav-btn" id="testConnectionBtn" type="button">🔍 测试网络连接</button>
+                        <span id="testConnResult" style="font-size:13px;align-self:center;"></span>
+                    </div>
+
+                    <!-- 6. 源码防泄露密文同步面板 (解锁后可查看密文，便于填入 GitHub 源码) -->
+                    <div id="groupGithubSync" style="display:none;background:rgba(255,255,255,0.03);border:1px dashed rgba(56,189,248,0.3);border-radius:10px;padding:12px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                            <span style="font-size:12px;color:#38bdf8;font-weight:600;">📋 GitHub 源码密文（可选）</span>
+                            <button type="button" id="copyCipherBtn" style="background:none;border:none;color:#38bdf8;font-size:12px;cursor:pointer;">复制密文</button>
+                        </div>
+                        <p style="font-size:11px;color:#94a3b8;line-height:1.5;margin-bottom:6px;">
+                            若需把 API 地址安全部署至 GitHub 仓库，可复制此 AES-256 密文填入网页源码中的 <code>window.REPO_ENCRYPTED_API</code>。公开源码绝无明文，只有在网页输入密码才可解密使用。
+                        </p>
+                        <textarea id="cipherOutputText" readonly style="width:100%;height:48px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#cbd5e1;font-size:11px;padding:6px;font-family:monospace;resize:none;"></textarea>
+                    </div>
                 </div>
-            </div>
+            </form>
             <div class="drawer-footer">
                 <button class="nav-btn" id="resetSettingsBtn" type="button">清除配置</button>
                 <button class="nav-btn" id="lockNowBtn" type="button" style="display:none;">🔒 立即锁定</button>
@@ -2008,90 +2013,91 @@
 
         // 关闭/隐藏当前对话框 (仅暂时关闭窗口，保留当前会话内容与历史，下次再对话时依然可见)
         if (closeActiveBubbleBtn) {
-            closeActiveBubbleBtn.addEventListener('click', () => {
+            closeActiveBubbleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 activeDialogBubble.classList.remove('visible');
             });
         }
 
         // 点击“凝成星芒”按钮
-        condenseStarBtn.addEventListener('click', () => {
+        condenseStarBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             condenseCurrentSessionToStar();
         });
 
         /**
          * 凝炼当前对话为星芒：
-         * 1. 将当前对话打包生成星芒并升入夜空；
-         * 2. 对话框凝聚关闭，并彻底清空本次会话；
-         * 3. 下一次再对话时在全新的对话框中开启，不显示已归档的历史对话。
+         * 点击后立即关闭窗口、清空对话框内容并重置会话，同时在后台将本次对话打包为星芒升入夜空。
          */
         async function condenseCurrentSessionToStar() {
-            if (currentSessionMessages.length === 0 || isCondensing || isGenerating) return;
+            if (isCondensing) return;
 
+            // 1. 获取本轮对话内容的快照
+            const sessionToCondense = [...currentSessionMessages];
+
+            // 2. 【核心要求】立即关闭窗口并彻底清空对话框 DOM 内容与会话数据
+            activeDialogBubble.classList.remove('visible');
+            activeBubbleBody.innerHTML = '';
+            currentSessionMessages = [];
+            chatHistory = [];
+            collapseProgressBar.style.transition = 'none';
+            collapseProgressBar.style.width = '0%';
+            activeBubbleTitle.innerText = '✨ 交流中...';
+
+            // 停止当前正在播放的实时语音
+            if (voiceEngine) {
+                voiceEngine.stop();
+            }
+
+            // 若本轮无实际消息，仅执行即时关闭与清空
+            if (sessionToCondense.length === 0) {
+                return;
+            }
+
+            // 3. 在后台异步发射流星升空，凝炼夜空星芒
             isCondensing = true;
-            condenseStarBtn.disabled = true;
-            activeBubbleTitle.innerText = '✨ 正在凝炼星芒...';
+            try {
+                // 流星起点：屏幕右下侧区域
+                const fromX = window.innerWidth - 60;
+                const fromY = window.innerHeight - 80;
 
-            // 显示计算进度条 (2400ms 匀速过渡)
-            collapseProgressBar.style.transition = 'width 2400ms cubic-bezier(0.2, 0.8, 0.4, 1)';
-            collapseProgressBar.style.width = '100%';
+                const summary = await generateDialogueSummary(sessionToCondense);
 
-            // 同时请求/提炼概括短语，并等待进度条动画呈现
-            const summaryPromise = generateDialogueSummary(currentSessionMessages);
-            const waitMinTime = new Promise(resolve => setTimeout(resolve, 2200));
-            const [summary] = await Promise.all([summaryPromise, waitMinTime]);
+                const orbitScale = 0.42 + Math.random() * 0.52;
+                const initialAngle = Math.random() * Math.PI * 2;
+                const a = orbitScale * orbitBounds.aMax;
+                const b = orbitScale * orbitBounds.bMax;
+                const toX = orbitBounds.xc + a * Math.cos(initialAngle);
+                const toY = orbitBounds.yc + b * Math.sin(initialAngle);
+                const colorObj = STAR_PALETTE[Math.floor(Math.random() * STAR_PALETTE.length)];
 
-            // 发射流星至夜空椭圆轨道
-            const rect = condenseStarBtn.getBoundingClientRect();
-            const fromX = rect.left + rect.width / 2;
-            const fromY = rect.top + rect.height / 2;
+                const starData = {
+                    id: Date.now(),
+                    summary: summary,
+                    userText: summary,
+                    messages: sessionToCondense,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    orbitScale: orbitScale,
+                    angle: initialAngle,
+                    color: colorObj
+                };
 
-            const orbitScale = 0.42 + Math.random() * 0.52;
-            const initialAngle = Math.random() * Math.PI * 2;
-            const a = orbitScale * orbitBounds.aMax;
-            const b = orbitScale * orbitBounds.bMax;
-            const toX = orbitBounds.xc + a * Math.cos(initialAngle);
-            const toY = orbitBounds.yc + b * Math.sin(initialAngle);
-            const colorObj = STAR_PALETTE[Math.floor(Math.random() * STAR_PALETTE.length)];
+                shootMeteor(fromX, fromY, toX, toY, colorObj, () => {
+                    const starEl = createStarElement(starData);
+                    starEl.classList.add('star-newborn');
+                    starsContainer.appendChild(starEl);
+                    setTimeout(() => {
+                        starEl.classList.remove('star-newborn');
+                    }, 600);
 
-            const starData = {
-                id: Date.now(),
-                summary: summary,
-                userText: summary, // 兼容字段
-                messages: [...currentSessionMessages],
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                orbitScale: orbitScale,
-                angle: initialAngle,
-                color: colorObj
-            };
-
-            // 对话框随流星凝聚升空动画效果
-            activeDialogBubble.classList.add('condensing');
-
-            // 发射流星动画并在夜空生成星芒
-            shootMeteor(fromX, fromY, toX, toY, colorObj, () => {
-                const starEl = createStarElement(starData);
-                starEl.classList.add('star-newborn');
-                starsContainer.appendChild(starEl);
-                setTimeout(() => {
-                    starEl.classList.remove('star-newborn');
-                }, 600);
-
-                starHistory.push(starData);
-                localStorage.setItem('xingcai_star_history', JSON.stringify(starHistory));
-            });
-
-            // 凝聚动画完成后关闭对话框并彻底清空本次会话，下次对话开启纯净新对话框
-            setTimeout(() => {
-                activeDialogBubble.classList.remove('visible', 'condensing');
-                activeBubbleBody.innerHTML = '';
-                currentSessionMessages = [];
-                chatHistory = [];
-                collapseProgressBar.style.transition = 'none';
-                collapseProgressBar.style.width = '0%';
-                activeBubbleTitle.innerText = '✨ 交流中...';
-                condenseStarBtn.disabled = false;
+                    starHistory.push(starData);
+                    localStorage.setItem('xingcai_star_history', JSON.stringify(starHistory));
+                });
+            } catch (err) {
+                console.warn('凝炼星芒后台异常:', err);
+            } finally {
                 isCondensing = false;
-            }, 400);
+            }
         }
 
         /**
@@ -2267,13 +2273,19 @@
             const text = chatInput.value.trim();
             if (!text || isGenerating) return;
 
+            // 过滤浏览器密码管理器误填充的纯 API 地址，防止误发进对话框
+            if (/^https?:\/\/[^\s]+(\/v1|\/chat|\/models)?\/?$/i.test(text) && (text.includes('11434') || text.includes('1234') || text.includes('/v1') || text.includes('localhost'))) {
+                chatInput.value = '';
+                return;
+            }
+
             chatInput.value = '';
             isGenerating = true;
             sendBtn.disabled = true;
 
             const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-            // 确保对话气泡显示
+            // 确保对话气泡显示 (若是暂闭后继续发言，在原对话框中继续追加显示)
             activeBubbleTitle.innerText = '✨ 交流中...';
             activeDialogBubble.classList.add('visible');
 
@@ -2307,6 +2319,17 @@
             }
         }
 
+        // 防止浏览器密码管理器将 API 地址自动填充到底部聊天输入框中
+        function purgeAutofilledApiFromChatInput() {
+            if (chatInput && (chatInput.value.startsWith('http://') || chatInput.value.startsWith('https://') || chatInput.value.includes('/v1') || chatInput.value.includes('localhost') || chatInput.value.includes(':11434'))) {
+                chatInput.value = '';
+            }
+        }
+        window.addEventListener('DOMContentLoaded', purgeAutofilledApiFromChatInput);
+        window.addEventListener('load', () => setTimeout(purgeAutofilledApiFromChatInput, 200));
+        chatInput.addEventListener('focus', purgeAutofilledApiFromChatInput);
+        chatInput.addEventListener('input', purgeAutofilledApiFromChatInput);
+
         chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -2314,11 +2337,6 @@
             }
         });
         sendBtn.addEventListener('click', handleSend);
-        chatInput.addEventListener('focus', () => {
-            if (currentSessionMessages.length > 0 && !activeDialogBubble.classList.contains('visible')) {
-                activeDialogBubble.classList.add('visible');
-            }
-        });
 
         async function sendToLocalLLM(textEl, time) {
             let fullContent = '';
