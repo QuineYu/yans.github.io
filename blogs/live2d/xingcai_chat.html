@@ -1403,7 +1403,7 @@
                 if (!text) return '';
                 return text
                     .replace(/<[^>]+>/g, '')
-                    .replace(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|jacket|skirt1|skirt2)\]/gi, '')
+                    .replace(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|叹息|叹气|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|sigh|jacket|skirt1|skirt2)\]/gi, '')
                     .replace(/\[.*?\]/g, '')
                     .replace(/[*_#`~]/g, '')
                     .trim();
@@ -2132,6 +2132,12 @@
         function extractRuleBasedSummary(sessionMessages) {
             const allText = sessionMessages.map(m => m.content).join(' ');
 
+            if (/图书馆|闭馆|永夜|黑暗|漆黑|困住/i.test(allText)) return '永夜图书馆之困境';
+            if (/3:14|3\.14|圆周率|时间静止|停滞/i.test(allText)) return '停滞之刻与圆周之思';
+            if (/59%|手机|电量|手电筒/i.test(allText)) return '静止时空中的信物';
+            if (/永生魔女|魔女|神明|几千年|孤独/i.test(allText)) return '千年魔女与孤独之幸';
+            if (/ai|人工智能|硬件|大工程/i.test(allText)) return '关于人工智能之探想';
+            if (/书山|翻阅|藏书|书籍/i.test(allText)) return '万卷书海与格物探索';
             if (/以太|麦克斯韦|电磁|电|磁/i.test(allText)) return '麦克斯韦电磁理论之辨';
             if (/冲力|布里丹|伽利略|落体/i.test(allText)) return '中世纪冲力说与经典力学';
             if (/神曲|但丁|托勒密|天体|天球/i.test(allText)) return '《神曲》九重天界与天体模型';
@@ -2139,9 +2145,9 @@
             if (/力学|牛顿|引力|重力|万有引力/i.test(allText)) return '经典力学体系与引力之思';
             if (/量子|波函数|薛定谔|不确定/i.test(allText)) return '微观量子世界与波动之论';
             if (/亚里士多德|经院|自然哲学/i.test(allText)) return '亚里士多德与自然哲学辨析';
-            if (/文学|古典|诗|辞章/i.test(allText)) return '古典文学与辞章意趣品读';
+            if (/文学|社科|古典|诗|辞章/i.test(allText)) return '文学社科与精神慰藉';
             if (/衣服|外套|换衣服|装束|容装/i.test(allText)) return '关于衣着整肃之闲谈';
-            if (/你好|幸会|初见|在吗/i.test(allText)) return '初晤论道之浅谈问候';
+            if (/你好|幸会|初见|在吗|自我介绍/i.test(allText)) return '初晤论道之浅谈问候';
 
             for (const m of sessionMessages) {
                 const clean = voiceEngine.cleanText(m.content);
@@ -2235,7 +2241,7 @@
         // 消息发送、流式响应与语音同步输出逻辑
         // ==========================================
         function formatActionTags(rawText) {
-            return rawText.replace(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|jacket|skirt1|skirt2)\]/gi, (match) => {
+            return rawText.replace(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|叹息|叹气|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|sigh|jacket|skirt1|skirt2)\]/gi, (match) => {
                 return `<span class="action-tag">🏷️ ${match.replace(/[\[\]]/g, '')}</span>`;
             });
         }
@@ -2327,7 +2333,7 @@
                     chatHistory,
                     (chunk) => {
                         fullContent += chunk;
-                        const matches = fullContent.match(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|jacket|skirt1|skirt2)\]/gi);
+                        const matches = fullContent.match(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|叹息|叹气|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|sigh|jacket|skirt1|skirt2)\]/gi);
                         if (matches) {
                             for (const tag of matches) {
                                 const clean = tag.replace(/[\[\]]/g, '').toLowerCase();
@@ -2380,7 +2386,7 @@
                     currentText += fullText[index];
                     index++;
 
-                    const matches = currentText.match(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|jacket|skirt1|skirt2)\]/gi);
+                    const matches = currentText.match(/\[(点头|摇头|歪头|害羞|脸红|眨眼|卖萌|微笑|开心|思考|沉思|叹息|叹气|惊讶|吃惊|换衣服|外套|脱外套|穿外套|裙子1|裙子2|nod|shake|tilt|blush|wink|smile|think|surprise|sigh|jacket|skirt1|skirt2)\]/gi);
                     if (matches) {
                         for (const tag of matches) {
                             const clean = tag.replace(/[\[\]]/g, '').toLowerCase();
