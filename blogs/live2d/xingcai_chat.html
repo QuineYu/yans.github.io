@@ -1110,10 +1110,10 @@
         <div class="active-bubble-header">
             <span class="active-bubble-title" id="activeBubbleTitle">✨ 交流中...</span>
             <div style="display:flex;align-items:center;gap:8px;">
-                <button class="condense-btn" id="condenseStarBtn" title="将当前对话凝炼为星芒">
+                <button class="condense-btn" id="condenseStarBtn" title="凝成星芒归档并开启新对话">
                     <span>⭐ 凝成星芒</span>
                 </button>
-                <button class="bubble-close-btn" id="closeActiveBubbleBtn" title="隐藏对话框">×</button>
+                <button class="bubble-close-btn" id="closeActiveBubbleBtn" title="暂时关闭窗口">×</button>
             </div>
         </div>
         <div class="bubble-collapse-progress">
@@ -2006,7 +2006,7 @@
         // 当前对话气泡管理与星芒凝炼系统
         // ==========================================
 
-        // 关闭/隐藏当前对话框
+        // 关闭/隐藏当前对话框 (仅暂时关闭窗口，保留当前会话内容与历史，下次再对话时依然可见)
         if (closeActiveBubbleBtn) {
             closeActiveBubbleBtn.addEventListener('click', () => {
                 activeDialogBubble.classList.remove('visible');
@@ -2019,7 +2019,10 @@
         });
 
         /**
-         * 凝炼当前对话为星芒 (需要点击而非自动，未点击则视为同一次对话，凝成星芒后也放在同一个对话框中)
+         * 凝炼当前对话为星芒：
+         * 1. 将当前对话打包生成星芒并升入夜空；
+         * 2. 对话框凝聚关闭，并彻底清空本次会话；
+         * 3. 下一次再对话时在全新的对话框中开启，不显示已归档的历史对话。
          */
         async function condenseCurrentSessionToStar() {
             if (currentSessionMessages.length === 0 || isCondensing || isGenerating) return;
@@ -2061,6 +2064,9 @@
                 color: colorObj
             };
 
+            // 对话框随流星凝聚升空动画效果
+            activeDialogBubble.classList.add('condensing');
+
             // 发射流星动画并在夜空生成星芒
             shootMeteor(fromX, fromY, toX, toY, colorObj, () => {
                 const starEl = createStarElement(starData);
@@ -2074,30 +2080,18 @@
                 localStorage.setItem('xingcai_star_history', JSON.stringify(starHistory));
             });
 
-            // 在同一个对话框中插入凝成星芒的优雅标记卡片
-            const badgeEl = document.createElement('div');
-            badgeEl.className = 'star-condensed-badge';
-            badgeEl.style.borderColor = colorObj.color;
-            badgeEl.style.boxShadow = `0 0 14px ${colorObj.glow}`;
-            badgeEl.title = '点击重温本次星芒记忆';
-            badgeEl.innerHTML = `
-                <span class="star-badge-icon" style="color:${colorObj.color};">✦</span>
-                <span class="star-badge-text">已凝成星芒 · “${escapeHtml(summary)}”</span>
-                <span class="star-badge-star" style="color:${colorObj.color};">⭐</span>
-            `;
-            badgeEl.addEventListener('click', () => {
-                openHistoryBubble(starData);
-            });
-            activeBubbleBody.appendChild(badgeEl);
-            activeBubbleBody.scrollTop = activeBubbleBody.scrollHeight;
-
-            // 复位进度条与按钮状态，清空当前会话队列以开启后续交流
-            collapseProgressBar.style.transition = 'none';
-            collapseProgressBar.style.width = '0%';
-            activeBubbleTitle.innerText = '✨ 交流中...';
-            condenseStarBtn.disabled = false;
-            currentSessionMessages = [];
-            isCondensing = false;
+            // 凝聚动画完成后关闭对话框并彻底清空本次会话，下次对话开启纯净新对话框
+            setTimeout(() => {
+                activeDialogBubble.classList.remove('visible', 'condensing');
+                activeBubbleBody.innerHTML = '';
+                currentSessionMessages = [];
+                chatHistory = [];
+                collapseProgressBar.style.transition = 'none';
+                collapseProgressBar.style.width = '0%';
+                activeBubbleTitle.innerText = '✨ 交流中...';
+                condenseStarBtn.disabled = false;
+                isCondensing = false;
+            }, 400);
         }
 
         /**
@@ -2320,6 +2314,11 @@
             }
         });
         sendBtn.addEventListener('click', handleSend);
+        chatInput.addEventListener('focus', () => {
+            if (currentSessionMessages.length > 0 && !activeDialogBubble.classList.contains('visible')) {
+                activeDialogBubble.classList.add('visible');
+            }
+        });
 
         async function sendToLocalLLM(textEl, time) {
             let fullContent = '';
