@@ -752,9 +752,128 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 12px;
             font-size: 15px;
             font-weight: 600;
             color: #ffffff;
+        }
+
+        .history-title {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        /* 顶部收藏按钮 (中空五角星) */
+        .history-fav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            color: #cbd5e1;
+            padding: 5px 11px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: var(--app-cursor-pointer);
+            transition: all 0.22s ease;
+            user-select: none;
+            outline: none;
+        }
+
+        .history-fav-btn:hover {
+            background: rgba(255, 255, 255, 0.14);
+            border-color: rgba(251, 191, 36, 0.5);
+            color: #fcd34d;
+            transform: translateY(-1px);
+        }
+
+        .history-fav-btn:active {
+            transform: translateY(0);
+        }
+
+        /* 中空五角星 SVG 图标默认样式 (fill: none，纯正中空) */
+        .history-fav-star {
+            width: 17px;
+            height: 17px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: fill 0.22s ease, stroke 0.22s ease, transform 0.22s ease, filter 0.22s ease;
+        }
+
+        /* 收藏激活状态：填充暖金光芒 */
+        .history-fav-btn.is-favorite {
+            background: rgba(245, 158, 11, 0.18);
+            border-color: rgba(245, 158, 11, 0.55);
+            color: #fbbf24;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+        }
+
+        .history-fav-btn.is-favorite .history-fav-star {
+            fill: #fbbf24;
+            stroke: #fbbf24;
+            filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.8));
+            animation: favStarPop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes favStarPop {
+            0% { transform: scale(0.85); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        /* 底部收藏按键样式 */
+        .history-fav-footer-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .history-fav-footer-btn.is-favorite {
+            background: rgba(245, 158, 11, 0.16) !important;
+            border-color: rgba(245, 158, 11, 0.5) !important;
+            color: #fbbf24 !important;
+        }
+
+        .history-fav-footer-btn.is-favorite .history-fav-star {
+            fill: #fbbf24;
+            stroke: #fbbf24;
+            filter: drop-shadow(0 0 3px rgba(251, 191, 36, 0.8));
+        }
+
+        /* 收藏星辰在夜空中的特别光晕微标 */
+        .sky-star.is-favorite .star-body::after {
+            content: '';
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px dashed rgba(251, 191, 36, 0.8);
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.45);
+            pointer-events: none;
+            animation: favoriteAuraSpin 24s linear infinite;
+        }
+
+        @keyframes favoriteAuraSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .sky-star.is-favorite .star-icon svg {
+            filter: drop-shadow(0 0 8px #fbbf24) drop-shadow(0 0 18px rgba(251, 191, 36, 0.65)) !important;
         }
 
         .history-card-body {
@@ -1129,7 +1248,15 @@
         <div class="history-bubble-card">
             <div class="history-card-header">
                 <div class="history-title" id="historyModalTitle">✨ 对话星辰</div>
-                <button class="close-btn" id="closeHistoryModalBtn">×</button>
+                <div class="history-header-actions">
+                    <button class="history-fav-btn" id="historyFavoriteBtn" title="收藏此星芒（清理星空时不会被清理）">
+                        <svg class="history-fav-star" viewBox="0 0 24 24">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                        </svg>
+                        <span class="history-fav-text">收藏</span>
+                    </button>
+                    <button class="close-btn" id="closeHistoryModalBtn">×</button>
+                </div>
             </div>
             <div class="history-card-body">
                 <div class="bubble-row user">
@@ -1146,6 +1273,12 @@
                     <span>👄</span> 重温动作与语音
                 </button>
                 <div style="flex:1"></div>
+                <button class="nav-btn history-fav-footer-btn" id="historyFavoriteFooterBtn" title="收藏此星芒（清理星空时不会被清理）">
+                    <svg class="history-fav-star" viewBox="0 0 24 24" style="width:14px;height:14px;">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                    <span class="history-fav-footer-text">收藏</span>
+                </button>
                 <button class="nav-btn" id="historyDeleteBtn" style="color:#f87171;border-color:rgba(248,113,113,0.3);" title="从星空中放飞这颗星星">
                     <span>🗑️</span> 放飞
                 </button>
@@ -1325,9 +1458,12 @@
         const historyUserMsg = document.getElementById('historyUserMsg');
         const historyAiMsg = document.getElementById('historyAiMsg');
         const historyReplayBtn = document.getElementById('historyReplayBtn');
+        const historyFavoriteBtn = document.getElementById('historyFavoriteBtn');
+        const historyFavoriteFooterBtn = document.getElementById('historyFavoriteFooterBtn');
         const historyDeleteBtn = document.getElementById('historyDeleteBtn');
         const closeHistoryModalBtn = document.getElementById('closeHistoryModalBtn');
         const closeHistoryModalConfirmBtn = document.getElementById('closeHistoryModalConfirmBtn');
+        let currentViewedStar = null;
 
         // 模型设置 Drawer 相关 DOM 引用
         const settingsDrawer = document.getElementById('settingsDrawer');
@@ -1673,7 +1809,7 @@
 
         function createStarElement(starData) {
             const el = document.createElement('div');
-            el.className = 'sky-star';
+            el.className = 'sky-star' + (starData.isFavorite ? ' is-favorite' : '');
             el.id = `star-${starData.id}`;
             el.style.color = starData.color.color;
 
@@ -1711,7 +1847,7 @@
                         </div>
                     </div>
                     <div class="star-tooltip">
-                        <div class="star-tooltip-title">✨ 记忆星芒</div>
+                        <div class="star-tooltip-title">${starData.isFavorite ? '⭐ 已收藏 · 记忆星芒' : '✨ 记忆星芒'}</div>
                         <div class="star-tooltip-text">${escapeHtml(shortText)}</div>
                     </div>
                 </div>
@@ -1869,7 +2005,11 @@
                 disintegrateStar(starEl, colorObj);
             }
             starHistory = starHistory.filter(s => String(s.id) !== String(id));
-            localStorage.setItem('xingcai_star_history', JSON.stringify(starHistory));
+            if (starHistory.length === 0) {
+                localStorage.removeItem('xingcai_star_history');
+            } else {
+                localStorage.setItem('xingcai_star_history', JSON.stringify(starHistory));
+            }
         }
 
         let isClearingStars = false;
@@ -1877,7 +2017,24 @@
         clearChatBtn.addEventListener('click', () => {
             if (isClearingStars || isGenerating || isCondensing) return;
             if (starHistory.length === 0 && currentSessionMessages.length === 0 && chatHistory.length === 0 && !activeDialogBubble.classList.contains('visible')) return;
-            if (!confirm('确定要清理夜空中的所有对话星辰并重置对话记忆吗？')) return;
+
+            const favoriteStars = starHistory.filter(s => !!s.isFavorite);
+            const unpinnedStars = starHistory.filter(s => !s.isFavorite);
+
+            // 若夜空所有星辰均已收藏且当前没有未归档对话，给出温馨提示
+            if (starHistory.length > 0 && unpinnedStars.length === 0 && currentSessionMessages.length === 0 && !activeDialogBubble.classList.contains('visible')) {
+                alert('夜空中的所有星芒均已收藏，不会被清理星空清除。\n如需放飞某颗星芒，请点开该星芒卡片点击“放飞”或取消收藏。');
+                return;
+            }
+
+            let confirmMsg = '确定要清理夜空中的所有对话星辰并重置对话记忆吗？';
+            if (starHistory.length > 0 && unpinnedStars.length === 0) {
+                confirmMsg = '夜空中所有星芒均已收藏（将全部保留）。是否重置当前进行的对话记忆与交流窗口？';
+            } else if (favoriteStars.length > 0) {
+                confirmMsg = `确定要清理夜空中的未收藏对话星辰并重置对话记忆吗？\n（已收藏的 ${favoriteStars.length} 颗星芒将被妥善保留）`;
+            }
+
+            if (!confirm(confirmMsg)) return;
 
             isClearingStars = true;
             clearChatBtn.style.opacity = '0.5';
@@ -1905,16 +2062,23 @@
             }
 
             const starElements = Array.from(starsContainer.querySelectorAll('.sky-star'));
-            const totalStars = starElements.length;
+            // 筛选出未被收藏的星星 DOM 元素，仅清理未收藏星辰
+            const starsToClear = starElements.filter(starEl => {
+                const id = starEl.id ? starEl.id.replace('star-', '') : null;
+                const starData = starHistory.find(s => String(s.id) === String(id));
+                return !starData || !starData.isFavorite;
+            });
+
+            const totalStars = starsToClear.length;
 
             if (totalStars === 0) {
                 finishClear();
                 return;
             }
 
-            // 2. 波浪涟漪式群星依次解构化作尘埃消散 (错峰启动)
+            // 2. 波浪涟漪式群星依次解构化作尘埃消散 (错峰启动，仅对未收藏星星执行消散)
             let finishedCount = 0;
-            starElements.forEach((starEl, index) => {
+            starsToClear.forEach((starEl, index) => {
                 const delay = Math.min(index * 120, 1200) + Math.random() * 40;
                 setTimeout(() => {
                     const id = starEl.id ? starEl.id.replace('star-', '') : null;
@@ -1931,11 +2095,16 @@
             });
 
             function finishClear() {
-                starsContainer.innerHTML = '';
-                starHistory = [];
+                // 仅保留已收藏的星辰数据，未收藏的星辰已被逐一 disintegrateStar 移除 DOM
+                starHistory = starHistory.filter(s => !!s.isFavorite);
+                if (starHistory.length === 0) {
+                    starsContainer.innerHTML = '';
+                    localStorage.removeItem('xingcai_star_history');
+                } else {
+                    localStorage.setItem('xingcai_star_history', JSON.stringify(starHistory));
+                }
                 chatHistory = [];
                 currentSessionMessages = [];
-                localStorage.removeItem('xingcai_star_history');
                 isClearingStars = false;
                 clearChatBtn.style.opacity = '';
                 clearChatBtn.style.pointerEvents = '';
@@ -2079,7 +2248,8 @@
                     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     orbitScale: orbitScale,
                     angle: initialAngle,
-                    color: colorObj
+                    color: colorObj,
+                    isFavorite: false
                 };
 
                 shootMeteor(fromX, fromY, toX, toY, colorObj, () => {
@@ -2161,7 +2331,79 @@
         // ==========================================
         // 历史对话查看弹窗
         // ==========================================
+        function updateFavoriteButtonState(isFav) {
+            if (isFav) {
+                if (historyFavoriteBtn) {
+                    historyFavoriteBtn.classList.add('is-favorite');
+                    historyFavoriteBtn.title = '已收藏（清理星空时不会被清理，点击取消收藏）';
+                    const headerText = historyFavoriteBtn.querySelector('.history-fav-text');
+                    if (headerText) headerText.innerText = '已收藏';
+                }
+                if (historyFavoriteFooterBtn) {
+                    historyFavoriteFooterBtn.classList.add('is-favorite');
+                    historyFavoriteFooterBtn.title = '已收藏（清理星空时不会被清理，点击取消收藏）';
+                    const footerText = historyFavoriteFooterBtn.querySelector('.history-fav-footer-text');
+                    if (footerText) footerText.innerText = '已收藏';
+                }
+            } else {
+                if (historyFavoriteBtn) {
+                    historyFavoriteBtn.classList.remove('is-favorite');
+                    historyFavoriteBtn.title = '收藏此星芒（清理星空时不会被清理）';
+                    const headerText = historyFavoriteBtn.querySelector('.history-fav-text');
+                    if (headerText) headerText.innerText = '收藏';
+                }
+                if (historyFavoriteFooterBtn) {
+                    historyFavoriteFooterBtn.classList.remove('is-favorite');
+                    historyFavoriteFooterBtn.title = '收藏此星芒（清理星空时不会被清理）';
+                    const footerText = historyFavoriteFooterBtn.querySelector('.history-fav-footer-text');
+                    if (footerText) footerText.innerText = '收藏';
+                }
+            }
+        }
+
+        function toggleStarFavorite(starData) {
+            if (!starData) return;
+            starData.isFavorite = !starData.isFavorite;
+
+            const target = starHistory.find(s => String(s.id) === String(starData.id));
+            if (target) {
+                target.isFavorite = starData.isFavorite;
+            }
+            localStorage.setItem('xingcai_star_history', JSON.stringify(starHistory));
+
+            updateFavoriteButtonState(starData.isFavorite);
+
+            // 实时刷新夜空对应星芒的 DOM 状态 (金色光环与提示文本)
+            const starEl = document.getElementById(`star-${starData.id}`);
+            if (starEl) {
+                starEl.classList.toggle('is-favorite', !!starData.isFavorite);
+                const titleEl = starEl.querySelector('.star-tooltip-title');
+                if (titleEl) {
+                    titleEl.innerHTML = starData.isFavorite ? '⭐ 已收藏 · 记忆星芒' : '✨ 记忆星芒';
+                }
+            }
+        }
+
+        historyFavoriteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentViewedStar) {
+                toggleStarFavorite(currentViewedStar);
+            }
+        });
+
+        if (historyFavoriteFooterBtn) {
+            historyFavoriteFooterBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (currentViewedStar) {
+                    toggleStarFavorite(currentViewedStar);
+                }
+            });
+        }
+
         function openHistoryBubble(starData) {
+            currentViewedStar = starData;
+            updateFavoriteButtonState(!!starData.isFavorite);
+
             const summaryTitle = starData.summary || starData.userText || '对话记忆';
             historyModalTitle.innerHTML = `<span style="color:${starData.color.color};">✦</span> 记忆星芒 · <span style="font-size:13px;color:#38bdf8;font-weight:600;">“${escapeHtml(summaryTitle)}”</span> <span style="font-size:12px;color:#94a3b8;font-weight:normal;">(${starData.time || ''})</span>`;
 
@@ -2221,6 +2463,7 @@
 
         function closeHistoryBubble() {
             historyBubbleModal.classList.remove('active');
+            currentViewedStar = null;
         }
 
         closeHistoryModalBtn.addEventListener('click', closeHistoryBubble);
