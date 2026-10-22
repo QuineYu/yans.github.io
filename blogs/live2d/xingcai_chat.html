@@ -854,27 +854,7 @@
             filter: drop-shadow(0 0 3px rgba(251, 191, 36, 0.8));
         }
 
-        /* 收藏星辰在夜空中的特别光晕微标 */
-        .sky-star.is-favorite .star-body::after {
-            content: '';
-            position: absolute;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 1px dashed rgba(251, 191, 36, 0.8);
-            box-shadow: 0 0 10px rgba(251, 191, 36, 0.45);
-            pointer-events: none;
-            animation: favoriteAuraSpin 24s linear infinite;
-        }
 
-        @keyframes favoriteAuraSpin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .sky-star.is-favorite .star-icon svg {
-            filter: drop-shadow(0 0 8px #fbbf24) drop-shadow(0 0 18px rgba(251, 191, 36, 0.65)) !important;
-        }
 
         .history-card-body {
             padding: 20px;
@@ -1809,7 +1789,7 @@
 
         function createStarElement(starData) {
             const el = document.createElement('div');
-            el.className = 'sky-star' + (starData.isFavorite ? ' is-favorite' : '');
+            el.className = 'sky-star';
             el.id = `star-${starData.id}`;
             el.style.color = starData.color.color;
 
@@ -1847,7 +1827,7 @@
                         </div>
                     </div>
                     <div class="star-tooltip">
-                        <div class="star-tooltip-title">${starData.isFavorite ? '⭐ 已收藏 · 记忆星芒' : '✨ 记忆星芒'}</div>
+                        <div class="star-tooltip-title">✨ 记忆星芒</div>
                         <div class="star-tooltip-text">${escapeHtml(shortText)}</div>
                     </div>
                 </div>
@@ -2372,16 +2352,6 @@
             localStorage.setItem('xingcai_star_history', JSON.stringify(starHistory));
 
             updateFavoriteButtonState(starData.isFavorite);
-
-            // 实时刷新夜空对应星芒的 DOM 状态 (金色光环与提示文本)
-            const starEl = document.getElementById(`star-${starData.id}`);
-            if (starEl) {
-                starEl.classList.toggle('is-favorite', !!starData.isFavorite);
-                const titleEl = starEl.querySelector('.star-tooltip-title');
-                if (titleEl) {
-                    titleEl.innerHTML = starData.isFavorite ? '⭐ 已收藏 · 记忆星芒' : '✨ 记忆星芒';
-                }
-            }
         }
 
         historyFavoriteBtn.addEventListener('click', (e) => {
