@@ -1296,6 +1296,14 @@
                 <input type="text" name="fake_username_trap" style="display:none;" tabindex="-1" autocomplete="username">
                 <input type="password" name="fake_password_trap" style="display:none;" tabindex="-1" autocomplete="current-password">
                 <div class="drawer-content">
+                    <!-- 顶部居中放大的测试网络连接区域 -->
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 12px;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);border-radius:14px;text-align:center;gap:10px;margin-bottom:6px;">
+                        <button class="primary-action-btn" id="testConnectionBtn" type="button" style="padding:13px 36px;font-size:16px;font-weight:600;border-radius:14px;gap:8px;box-shadow:0 6px 20px rgba(2,132,199,0.5);cursor:pointer;letter-spacing:0.5px;">
+                            <span>🔍</span> 测试网络连接
+                        </button>
+                        <div id="testConnResult" style="font-size:13px;line-height:1.6;font-weight:500;min-height:20px;word-break:break-word;"></div>
+                    </div>
+
                     <!-- 1. 脱敏显示区 (锁定状态) -->
                     <div class="form-group" id="groupMaskedUrl">
                         <label class="form-label">API 地址 (Base URL)</label>
@@ -1334,11 +1342,7 @@
                         <input type="password" id="settingNewPasswordInput" class="form-input" placeholder="输入新密码 (可选)">
                     </div>
 
-                    <!-- 5. 测试网络连接区域 -->
-                    <div style="display:flex;gap:10px;align-items:center;">
-                        <button class="nav-btn" id="testConnectionBtn" type="button">🔍 测试网络连接</button>
-                        <span id="testConnResult" style="font-size:13px;align-self:center;"></span>
-                    </div>
+
 
                     <!-- 6. 源码防泄露密文同步面板 (解锁后可查看密文，便于填入 GitHub 源码) -->
                     <div id="groupGithubSync" style="display:none;background:rgba(255,255,255,0.03);border:1px dashed rgba(56,189,248,0.3);border-radius:10px;padding:12px;">
@@ -1500,16 +1504,51 @@
         // ==========================================
         class XingcaiVoiceEngine {
             constructor() {
+                this.edgeTtsUrl = localStorage.getItem('xingcai_tts_url') || 'http://127.0.0.1:8000';
+                this.edgeVoice = localStorage.getItem('xingcai_tts_voice') || 'zh-CN-XiaoyiNeural';
+                this.edgePitch = localStorage.getItem('xingcai_tts_pitch') || '+4Hz';
+                this.edgeRate = localStorage.getItem('xingcai_tts_rate') || '+0%';
+                this.isEdgeTtsOnline = false;
+
+                // 浏览器原生回退引擎
                 this.synth = (typeof window !== 'undefined' && 'speechSynthesis' in window) ? window.speechSynthesis : null;
                 this.selectedVoice = null;
-                this.isSpeaking = false;
-                this.initVoice();
+                this.initBrowserVoice();
                 if (this.synth && this.synth.onvoiceschanged !== undefined) {
-                    this.synth.onvoiceschanged = () => this.initVoice();
+                    this.synth.onvoiceschanged = () => this.initBrowserVoice();
+                }
+
+                // Web Audio API 真实振幅频谱分析器 (口型联动)
+                this.audioCtx = null;
+                this.analyser = null;
+                this.currentAudio = null;
+                this.isSpeaking = false;
+                this.lipSyncFrameId = null;
+
+                // 播放队列 (支持流式句群连续播放)
+                this.audioQueue = [];
+                this.isPlayingQueue = false;
+
+                // 检测本地 Edge-TTS 服务状态
+                this.checkEdgeTtsHealth();
+            }
+
+            async checkEdgeTtsHealth() {
+                try {
+                    const res = await fetch(`${this.edgeTtsUrl}/health`, { method: 'GET', signal: AbortSignal.timeout(2000) });
+                    if (res.ok) {
+                        this.isEdgeTtsOnline = true;
+                        console.log('[XingcaiVoiceEngine] ✨ 本地 Edge-TTS AI 语音服务已连接');
+                    } else {
+                        this.isEdgeTtsOnline = false;
+                    }
+                } catch (e) {
+                    this.isEdgeTtsOnline = false;
+                    console.log('[XingcaiVoiceEngine] 本地 Edge-TTS 未启动，将自动使用浏览器原生语音');
                 }
             }
 
-            initVoice() {
+            initBrowserVoice() {
                 if (!this.synth) return;
                 const voices = this.synth.getVoices();
                 if (!voices || voices.length === 0) return;
@@ -1530,19 +1569,139 @@
                     .trim();
             }
 
-            speak(text, onStart, onEnd) {
-                if (!this.synth) {
-                    if (onEnd) onEnd();
+            initAudioContext(audioEl) {
+                try {
+                    if (!this.audioCtx) {
+                        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                        if (AudioContextClass) {
+                            this.audioCtx = new AudioContextClass();
+                            this.analyser = this.audioCtx.createAnalyser();
+                            this.analyser.fftSize = 128;
+                            this.analyser.smoothingTimeConstant = 0.5;
+                        }
+                    }
+                    if (this.audioCtx && this.analyser) {
+                        if (this.audioCtx.state === 'suspended') {
+                            this.audioCtx.resume();
+                        }
+                        if (!audioEl._hasAudioSource) {
+                            const source = this.audioCtx.createMediaElementSource(audioEl);
+                            source.connect(this.analyser);
+                            this.analyser.connect(this.audioCtx.destination);
+                            audioEl._hasAudioSource = true;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[XingcaiVoiceEngine] Web Audio 初始化受限:', e);
+                }
+            }
+
+            startRealtimeLipSync(audioEl) {
+                if (this.lipSyncFrameId) {
+                    cancelAnimationFrame(this.lipSyncFrameId);
+                    this.lipSyncFrameId = null;
+                }
+                if (!this.analyser) {
+                    if (window.live2dMotionEngine) window.live2dMotionEngine.setSpeaking(true);
                     return;
                 }
+
+                const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+                const step = () => {
+                    if (audioEl.paused || audioEl.ended || !this.isSpeaking) {
+                        if (window.live2dMotionEngine) {
+                            window.live2dMotionEngine.setSpeaking(false);
+                            if (window.live2dMotionEngine.modelWrapper && window.live2dMotionEngine.modelWrapper._parameterValues) {
+                                window.live2dMotionEngine.setParam(window.live2dMotionEngine.modelWrapper._parameterValues, 'ParamMouthOpenY', 0);
+                            }
+                        }
+                        return;
+                    }
+                    this.analyser.getByteFrequencyData(dataArray);
+                    let sum = 0;
+                    for (let i = 0; i < dataArray.length; i++) {
+                        sum += dataArray[i];
+                    }
+                    const avg = sum / dataArray.length;
+                    const openY = Math.min(1.0, Math.max(0, (avg / 128.0) * 1.6));
+
+                    if (window.live2dMotionEngine && window.live2dMotionEngine.modelWrapper && window.live2dMotionEngine.modelWrapper._parameterValues) {
+                        window.live2dMotionEngine.setParam(window.live2dMotionEngine.modelWrapper._parameterValues, 'ParamMouthOpenY', openY);
+                        window.live2dMotionEngine.setParam(window.live2dMotionEngine.modelWrapper._parameterValues, 'ParamMouthForm', 0.35);
+                    }
+                    this.lipSyncFrameId = requestAnimationFrame(step);
+                };
+                this.lipSyncFrameId = requestAnimationFrame(step);
+            }
+
+            speak(text, onStart, onEnd) {
+                this.stop();
                 const clean = this.cleanText(text);
                 if (!clean) {
                     if (onEnd) onEnd();
                     return;
                 }
+
+                if (this.isEdgeTtsOnline) {
+                    this.playEdgeTts(clean, onStart, onEnd, () => {
+                        this.playBrowserTts(clean, onStart, onEnd);
+                    });
+                } else {
+                    this.playBrowserTts(clean, onStart, onEnd);
+                }
+            }
+
+            playEdgeTts(cleanText, onStart, onEnd, onErrorFallback) {
+                try {
+                    const encodedText = encodeURIComponent(cleanText);
+                    const encodedPitch = encodeURIComponent(this.edgePitch);
+                    const encodedRate = encodeURIComponent(this.edgeRate);
+                    const url = `${this.edgeTtsUrl}/tts?text=${encodedText}&voice=${this.edgeVoice}&pitch=${encodedPitch}&rate=${encodedRate}`;
+
+                    const audio = new Audio();
+                    audio.crossOrigin = "anonymous";
+                    audio.src = url;
+                    this.currentAudio = audio;
+
+                    audio.onplay = () => {
+                        this.isSpeaking = true;
+                        this.initAudioContext(audio);
+                        this.startRealtimeLipSync(audio);
+                        if (onStart) onStart();
+                    };
+
+                    audio.onended = () => {
+                        this.isSpeaking = false;
+                        if (window.live2dMotionEngine) window.live2dMotionEngine.setSpeaking(false);
+                        this.currentAudio = null;
+                        if (onEnd) onEnd();
+                    };
+
+                    audio.onerror = (e) => {
+                        console.warn('[XingcaiVoiceEngine] Edge-TTS 播放失败，降级回退:', e);
+                        this.isSpeaking = false;
+                        if (window.live2dMotionEngine) window.live2dMotionEngine.setSpeaking(false);
+                        this.currentAudio = null;
+                        if (onErrorFallback) onErrorFallback();
+                    };
+
+                    audio.play().catch((err) => {
+                        console.warn('[XingcaiVoiceEngine] 自动播放受阻或服务未连通:', err);
+                        if (onErrorFallback) onErrorFallback();
+                    });
+                } catch (e) {
+                    if (onErrorFallback) onErrorFallback();
+                }
+            }
+
+            playBrowserTts(cleanText, onStart, onEnd) {
+                if (!this.synth) {
+                    if (onEnd) onEnd();
+                    return;
+                }
                 try {
                     this.synth.cancel();
-                    const utt = new SpeechSynthesisUtterance(clean);
+                    const utt = new SpeechSynthesisUtterance(cleanText);
                     if (this.selectedVoice) utt.voice = this.selectedVoice;
                     utt.lang = 'zh-CN';
                     utt.rate = 1.0;
@@ -1565,18 +1724,36 @@
                     };
                     this.synth.speak(utt);
                 } catch (e) {
-                    console.warn('语音播放异常:', e);
+                    console.warn('原生语音播放异常:', e);
                     if (window.live2dMotionEngine) window.live2dMotionEngine.setSpeaking(false);
                     if (onEnd) onEnd();
                 }
             }
 
             stop() {
+                if (this.lipSyncFrameId) {
+                    cancelAnimationFrame(this.lipSyncFrameId);
+                    this.lipSyncFrameId = null;
+                }
+                if (this.currentAudio) {
+                    try {
+                        this.currentAudio.pause();
+                        this.currentAudio.currentTime = 0;
+                    } catch (e) {}
+                    this.currentAudio = null;
+                }
                 if (this.synth) {
                     try { this.synth.cancel(); } catch (e) {}
                 }
+                this.audioQueue = [];
+                this.isPlayingQueue = false;
                 this.isSpeaking = false;
-                if (window.live2dMotionEngine) window.live2dMotionEngine.setSpeaking(false);
+                if (window.live2dMotionEngine) {
+                    window.live2dMotionEngine.setSpeaking(false);
+                    if (window.live2dMotionEngine.modelWrapper && window.live2dMotionEngine.modelWrapper._parameterValues) {
+                        window.live2dMotionEngine.setParam(window.live2dMotionEngine.modelWrapper._parameterValues, 'ParamMouthOpenY', 0);
+                    }
+                }
             }
         }
 
@@ -1584,11 +1761,12 @@
             constructor(voiceEngine) {
                 this.voiceEngine = voiceEngine;
                 this.spokenLength = 0;
-                this.activeCount = 0;
+                this.queue = [];
+                this.isPlaying = false;
             }
 
             feed(fullText) {
-                if (!this.voiceEngine || !this.voiceEngine.synth) return;
+                if (!this.voiceEngine) return;
                 const remaining = fullText.slice(this.spokenLength);
                 const sentenceRegex = /([^。！？；!?\n]+[。！？；!?\n])/g;
                 let match;
@@ -1597,48 +1775,37 @@
                     this.spokenLength += rawSentence.length;
                     const clean = this.voiceEngine.cleanText(rawSentence);
                     if (clean) {
-                        this.speakSentence(clean);
+                        this.enqueue(clean);
                     }
                 }
             }
 
             finish(fullText) {
-                if (!this.voiceEngine || !this.voiceEngine.synth) return;
+                if (!this.voiceEngine) return;
                 const remaining = fullText.slice(this.spokenLength);
                 const clean = this.voiceEngine.cleanText(remaining);
                 if (clean) {
-                    this.speakSentence(clean);
+                    this.enqueue(clean);
                 }
             }
 
-            speakSentence(text) {
-                try {
-                    const utt = new SpeechSynthesisUtterance(text);
-                    if (this.voiceEngine.selectedVoice) utt.voice = this.voiceEngine.selectedVoice;
-                    utt.lang = 'zh-CN';
-                    utt.rate = 1.0;
-                    utt.pitch = 1.05;
+            enqueue(text) {
+                this.queue.push(text);
+                this.playNext();
+            }
 
-                    this.activeCount++;
-                    utt.onstart = () => {
-                        if (window.live2dMotionEngine) window.live2dMotionEngine.setSpeaking(true);
-                    };
-                    utt.onend = () => {
-                        this.activeCount = Math.max(0, this.activeCount - 1);
-                        if (this.activeCount === 0 && window.live2dMotionEngine) {
-                            window.live2dMotionEngine.setSpeaking(false);
-                        }
-                    };
-                    utt.onerror = () => {
-                        this.activeCount = Math.max(0, this.activeCount - 1);
-                        if (this.activeCount === 0 && window.live2dMotionEngine) {
-                            window.live2dMotionEngine.setSpeaking(false);
-                        }
-                    };
-                    this.voiceEngine.synth.speak(utt);
-                } catch (e) {
-                    console.warn('流式语音播放异常:', e);
-                }
+            playNext() {
+                if (this.isPlaying || this.queue.length === 0) return;
+                const text = this.queue.shift();
+                this.isPlaying = true;
+                this.voiceEngine.speak(
+                    text,
+                    () => {},
+                    () => {
+                        this.isPlaying = false;
+                        this.playNext();
+                    }
+                );
             }
         }
 
@@ -1659,6 +1826,10 @@
             loadStarHistory();
             await checkServerStatus();
             initModelInteraction();
+
+            // 打开网页时先弹出大模型配置服务界面
+            updateSettingsModalView();
+            settingsDrawer.classList.add('active');
         });
 
         function escapeHtml(str) {
@@ -3040,20 +3211,20 @@
 
         testConnectionBtn.addEventListener('click', async () => {
             testConnResult.style.color = '#38bdf8';
-            testConnResult.innerText = '正在测试连接...';
+            testConnResult.innerText = '正在测试连接中，请稍候...';
 
             if (isSettingsUnlocked) {
                 const url = settingBaseUrl.value.trim();
                 if (!url) {
                     testConnResult.style.color = '#f87171';
-                    testConnResult.innerText = '请先填写 API 地址';
+                    testConnResult.innerText = '模型连接失败，请与作者联系，或使用离线功能。';
                     return;
                 }
                 window.localLLMClient.saveSettings({ baseUrl: url });
             } else {
                 if (!window.localLLMClient.baseUrl) {
                     testConnResult.style.color = '#f87171';
-                    testConnResult.innerText = '未配置或未解锁 API，请先输入密码解锁';
+                    testConnResult.innerText = '模型连接失败，请与作者联系，或使用离线功能。';
                     return;
                 }
             }
@@ -3061,11 +3232,15 @@
             const res = await window.localLLMClient.checkHealth();
             if (res.ok) {
                 testConnResult.style.color = '#34d399';
-                testConnResult.innerText = '✅ 连接成功！服务正常在线';
-                checkServerStatus();
+                testConnResult.innerText = '✅ 模型已连接';
+                await checkServerStatus();
+                // 连接成功后平滑关闭设置窗口
+                setTimeout(() => {
+                    closeDrawer();
+                }, 1000);
             } else {
                 testConnResult.style.color = '#f87171';
-                testConnResult.innerText = '❌ 连接失败: ' + (res.error || '无法访问该地址');
+                testConnResult.innerText = '模型连接失败，请与作者联系，或使用离线功能。';
             }
         });
 
