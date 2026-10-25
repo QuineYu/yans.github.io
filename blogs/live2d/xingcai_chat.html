@@ -1189,6 +1189,11 @@
         </div>
 
         <div class="nav-actions">
+            <!-- [TEMP_VOICE_DEBUG_NAV_START] -->
+            <button class="nav-btn" id="openVoiceDebugBtn" style="background:rgba(234,179,8,0.22);border-color:rgba(250,204,21,0.6);color:#fde047;font-weight:600;" title="调试星彩声线与发音参数">
+                <span>🎙️</span> 声音调试
+            </button>
+            <!-- [TEMP_VOICE_DEBUG_NAV_END] -->
             <button class="nav-btn" id="openSettingsBtn" title="配置本地大模型接口">
                 <span>⚙️</span> 模型设置
             </button>
@@ -1366,6 +1371,108 @@
         </div>
     </div>
 
+    <!-- [TEMP_VOICE_DEBUG_MODAL_START] -->
+    <!-- 声音调试与声线试听面板 -->
+    <div class="drawer-overlay" id="voiceDebugModal">
+        <div class="drawer-box" style="width: 560px; max-height: 90vh;">
+            <div class="drawer-header" style="border-bottom: 1px solid rgba(250, 204, 21, 0.25);">
+                <span style="color:#fde047;display:flex;align-items:center;gap:8px;">
+                    <span>🎙️</span> 星彩声线调试面板 (Edge-TTS)
+                </span>
+                <button class="close-btn" id="closeVoiceDebugBtn">×</button>
+            </div>
+            <div class="drawer-content" style="gap: 16px;">
+                <!-- 预设快捷套用 -->
+                <div class="form-group">
+                    <label class="form-label" style="color:#fde047;font-weight:600;">✨ 风格预设（点击可快速一键套用并试听）</label>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                        <button type="button" class="nav-btn preset-voice-btn" data-voice="zh-CN-XiaoyiNeural" data-pitch="+4Hz" data-rate="+0%" data-volume="+0%">知性少女 (默认)</button>
+                        <button type="button" class="nav-btn preset-voice-btn" data-voice="zh-CN-XiaoyiNeural" data-pitch="+8Hz" data-rate="+5%" data-volume="+0%">俏皮灵动</button>
+                        <button type="button" class="nav-btn preset-voice-btn" data-voice="zh-CN-XiaoxiaoNeural" data-pitch="+2Hz" data-rate="-3%" data-volume="+0%">温和知心</button>
+                        <button type="button" class="nav-btn preset-voice-btn" data-voice="zh-CN-XiaoxiaoNeural" data-pitch="-3Hz" data-rate="-8%" data-volume="+0%">深邃魔女</button>
+                        <button type="button" class="nav-btn preset-voice-btn" data-voice="zh-TW-HsiaoChenNeural" data-pitch="+4Hz" data-rate="+0%" data-volume="+0%">柔和轻甜</button>
+                        <button type="button" class="nav-btn preset-voice-btn" data-voice="zh-CN-liaoning-XiaobeiNeural" data-pitch="+0Hz" data-rate="+0%" data-volume="+0%">东北豪爽</button>
+                    </div>
+                </div>
+
+                <!-- 1. 发音人选择 -->
+                <div class="form-group">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <label class="form-label">发音人 (Voice)</label>
+                        <span id="debugVoiceDesc" style="font-size:12px;color:#94a3b8;">清丽知性少女音</span>
+                    </div>
+                    <select id="debugVoiceSelect" class="form-input" style="background:#0f172a;color:#f1f5f9;cursor:pointer;">
+                        <optgroup label="—— 推荐女声 / 少女音色 ——">
+                            <option value="zh-CN-XiaoyiNeural" selected>zh-CN-XiaoyiNeural (晓伊 - 清丽轻柔、知性女学生)</option>
+                            <option value="zh-CN-XiaoxiaoNeural">zh-CN-XiaoxiaoNeural (晓晓 - 温暖自然、知心大姐姐)</option>
+                            <option value="zh-TW-HsiaoChenNeural">zh-TW-HsiaoChenNeural (晓臻 - 柔和细腻、微甜台湾腔)</option>
+                            <option value="zh-TW-HsiaoYuNeural">zh-TW-HsiaoYuNeural (晓雨 - 活泼俏皮)</option>
+                            <option value="zh-CN-liaoning-XiaobeiNeural">zh-CN-liaoning-XiaobeiNeural (晓北 - 东北话幽默)</option>
+                            <option value="zh-CN-shaanxi-XiaoniNeural">zh-CN-shaanxi-XiaoniNeural (晓妮 - 陕西话特色)</option>
+                        </optgroup>
+                        <optgroup label="—— 青年 / 男声可选 ——">
+                            <option value="zh-CN-YunxiNeural">zh-CN-YunxiNeural (云希 - 阳光少年)</option>
+                            <option value="zh-CN-YunjianNeural">zh-CN-YunjianNeural (云健 - 磁性青年)</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <!-- 2. 音调 Pitch -->
+                <div class="form-group">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <label class="form-label">音调 (Pitch)</label>
+                        <span id="debugPitchVal" style="font-size:13px;color:#38bdf8;font-weight:600;font-family:monospace;">+4Hz</span>
+                    </div>
+                    <input type="range" id="debugPitchSlider" min="-20" max="20" step="1" value="4" style="width:100%;cursor:pointer;">
+                    <small style="color:#64748b;font-size:11px;">正数声线更年轻清灵、更高幼萌；负数低沉从容、有千年月岁感</small>
+                </div>
+
+                <!-- 3. 语速 Rate -->
+                <div class="form-group">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <label class="form-label">语速 (Rate)</label>
+                        <span id="debugRateVal" style="font-size:13px;color:#38bdf8;font-weight:600;font-family:monospace;">+0%</span>
+                    </div>
+                    <input type="range" id="debugRateSlider" min="-30" max="40" step="5" value="0" style="width:100%;cursor:pointer;">
+                    <small style="color:#64748b;font-size:11px;">正数语速加快，负数语流缓慢悠扬</small>
+                </div>
+
+                <!-- 4. 音量 Volume -->
+                <div class="form-group">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <label class="form-label">音量 (Volume)</label>
+                        <span id="debugVolumeVal" style="font-size:13px;color:#38bdf8;font-weight:600;font-family:monospace;">+0%</span>
+                    </div>
+                    <input type="range" id="debugVolumeSlider" min="-30" max="30" step="5" value="0" style="width:100%;cursor:pointer;">
+                </div>
+
+                <!-- 5. 试听输入框与试听按钮 -->
+                <div class="form-group" style="background:rgba(255,255,255,0.03);padding:14px;border-radius:12px;border:1px solid rgba(250,204,21,0.2);">
+                    <label class="form-label" style="color:#fde047;">试听文本（可随意修改进行实听）</label>
+                    <textarea id="debugTestText" class="form-textarea" rows="2" style="min-height:56px;font-size:13px;margin-top:4px;">你好呀，我是来自2021年的一个物理系大学生星彩；也是这片荒芜时空的神明（眨眼）。</textarea>
+                    <div style="display:flex;gap:10px;margin-top:10px;">
+                        <button type="button" class="primary-action-btn" id="debugPlayBtn" style="flex:1;background:linear-gradient(135deg,#eab308 0%,#ca8a04 100%);box-shadow:0 4px 14px rgba(202,138,4,0.4);font-weight:600;">
+                            <span>▶️</span> 试听发音（同时带动口型）
+                        </button>
+                        <button type="button" class="nav-btn" id="debugStopBtn" style="padding:0 18px;">
+                            <span>⏹️</span> 停止
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="drawer-footer" style="justify-content:space-between;align-items:center;">
+                <button type="button" class="primary-action-btn" id="debugCopyParamsBtn" style="background:linear-gradient(135deg,#059669 0%,#047857 100%);box-shadow:0 4px 14px rgba(5,150,105,0.4);font-weight:600;">
+                    <span>📋</span> 一键复制参数配置
+                </button>
+                <div style="display:flex;gap:8px;">
+                    <button type="button" class="nav-btn" id="debugApplyBtn" style="color:#38bdf8;border-color:rgba(56,189,248,0.4);" title="保存到本地日常对话生效">应用到当前对话</button>
+                    <button type="button" class="nav-btn" id="closeVoiceDebugModalBtn">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- [TEMP_VOICE_DEBUG_MODAL_END] -->
+
     <!-- 主交互逻辑脚本 -->
     <script>
         /**
@@ -1508,6 +1615,7 @@
                 this.edgeVoice = localStorage.getItem('xingcai_tts_voice') || 'zh-CN-XiaoyiNeural';
                 this.edgePitch = localStorage.getItem('xingcai_tts_pitch') || '+4Hz';
                 this.edgeRate = localStorage.getItem('xingcai_tts_rate') || '+0%';
+                this.edgeVolume = localStorage.getItem('xingcai_tts_volume') || '+0%';
                 this.isEdgeTtsOnline = false;
 
                 // 浏览器原生回退引擎
@@ -1656,7 +1764,8 @@
                     const encodedText = encodeURIComponent(cleanText);
                     const encodedPitch = encodeURIComponent(this.edgePitch);
                     const encodedRate = encodeURIComponent(this.edgeRate);
-                    const url = `${this.edgeTtsUrl}/tts?text=${encodedText}&voice=${this.edgeVoice}&pitch=${encodedPitch}&rate=${encodedRate}`;
+                    const encodedVolume = encodeURIComponent(this.edgeVolume || '+0%');
+                    const url = `${this.edgeTtsUrl}/tts?text=${encodedText}&voice=${this.edgeVoice}&pitch=${encodedPitch}&rate=${encodedRate}&volume=${encodedVolume}`;
 
                     const audio = new Audio();
                     audio.crossOrigin = "anonymous";
@@ -3266,6 +3375,200 @@
                 setTimeout(() => copyCipherBtn.innerText = oldText, 2000);
             });
         });
+        // ==========================================
+        // [TEMP_VOICE_DEBUG_SCRIPT_START]
+        // 声音调试面板逻辑 (用户调优完成后可整体无缝移除)
+        // ==========================================
+        const voiceDebugModal = document.getElementById('voiceDebugModal');
+        const openVoiceDebugBtn = document.getElementById('openVoiceDebugBtn');
+        const closeVoiceDebugBtn = document.getElementById('closeVoiceDebugBtn');
+        const closeVoiceDebugModalBtn = document.getElementById('closeVoiceDebugModalBtn');
+
+        const debugVoiceSelect = document.getElementById('debugVoiceSelect');
+        const debugPitchSlider = document.getElementById('debugPitchSlider');
+        const debugPitchVal = document.getElementById('debugPitchVal');
+        const debugRateSlider = document.getElementById('debugRateSlider');
+        const debugRateVal = document.getElementById('debugRateVal');
+        const debugVolumeSlider = document.getElementById('debugVolumeSlider');
+        const debugVolumeVal = document.getElementById('debugVolumeVal');
+        const debugTestText = document.getElementById('debugTestText');
+        const debugPlayBtn = document.getElementById('debugPlayBtn');
+        const debugStopBtn = document.getElementById('debugStopBtn');
+        const debugCopyParamsBtn = document.getElementById('debugCopyParamsBtn');
+        const debugApplyBtn = document.getElementById('debugApplyBtn');
+
+        function formatOffset(val, unit) {
+            const num = Number(val) || 0;
+            return (num >= 0 ? `+${num}` : `${num}`) + unit;
+        }
+
+        function syncDebugPanelFromVoiceEngine() {
+            if (!window.xingcaiVoiceEngine) return;
+            const eng = window.xingcaiVoiceEngine;
+            if (debugVoiceSelect) debugVoiceSelect.value = eng.edgeVoice || 'zh-CN-XiaoyiNeural';
+
+            const pitchNum = parseInt(eng.edgePitch, 10) || 4;
+            if (debugPitchSlider) {
+                debugPitchSlider.value = pitchNum;
+                debugPitchVal.innerText = formatOffset(pitchNum, 'Hz');
+            }
+
+            const rateNum = parseInt(eng.edgeRate, 10) || 0;
+            if (debugRateSlider) {
+                debugRateSlider.value = rateNum;
+                debugRateVal.innerText = formatOffset(rateNum, '%');
+            }
+
+            const volumeNum = parseInt(eng.edgeVolume, 10) || 0;
+            if (debugVolumeSlider) {
+                debugVolumeSlider.value = volumeNum;
+                debugVolumeVal.innerText = formatOffset(volumeNum, '%');
+            }
+        }
+
+        if (openVoiceDebugBtn) {
+            openVoiceDebugBtn.addEventListener('click', () => {
+                syncDebugPanelFromVoiceEngine();
+                voiceDebugModal.classList.add('active');
+            });
+        }
+
+        const closeVoiceDebug = () => {
+            if (voiceDebugModal) voiceDebugModal.classList.remove('active');
+        };
+        if (closeVoiceDebugBtn) closeVoiceDebugBtn.addEventListener('click', closeVoiceDebug);
+        if (closeVoiceDebugModalBtn) closeVoiceDebugModalBtn.addEventListener('click', closeVoiceDebug);
+        if (voiceDebugModal) {
+            voiceDebugModal.addEventListener('click', (e) => {
+                if (e.target === voiceDebugModal) closeVoiceDebug();
+            });
+        }
+
+        // 滑块实时数值联动
+        if (debugPitchSlider) {
+            debugPitchSlider.addEventListener('input', (e) => {
+                debugPitchVal.innerText = formatOffset(e.target.value, 'Hz');
+            });
+        }
+        if (debugRateSlider) {
+            debugRateSlider.addEventListener('input', (e) => {
+                debugRateVal.innerText = formatOffset(e.target.value, '%');
+            });
+        }
+        if (debugVolumeSlider) {
+            debugVolumeSlider.addEventListener('input', (e) => {
+                debugVolumeVal.innerText = formatOffset(e.target.value, '%');
+            });
+        }
+
+        // 预设快速套用
+        document.querySelectorAll('.preset-voice-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const voice = btn.dataset.voice;
+                const pitch = btn.dataset.pitch;
+                const rate = btn.dataset.rate;
+                const volume = btn.dataset.volume;
+
+                if (debugVoiceSelect) debugVoiceSelect.value = voice;
+
+                const pNum = parseInt(pitch, 10) || 0;
+                if (debugPitchSlider) {
+                    debugPitchSlider.value = pNum;
+                    debugPitchVal.innerText = formatOffset(pNum, 'Hz');
+                }
+
+                const rNum = parseInt(rate, 10) || 0;
+                if (debugRateSlider) {
+                    debugRateSlider.value = rNum;
+                    debugRateVal.innerText = formatOffset(rNum, '%');
+                }
+
+                const vNum = parseInt(volume, 10) || 0;
+                if (debugVolumeSlider) {
+                    debugVolumeSlider.value = vNum;
+                    debugVolumeVal.innerText = formatOffset(vNum, '%');
+                }
+
+                applyCurrentDebugSettings();
+                playDebugTestAudio();
+            });
+        });
+
+        function applyCurrentDebugSettings() {
+            if (!window.xingcaiVoiceEngine) return;
+            const voice = debugVoiceSelect ? debugVoiceSelect.value : 'zh-CN-XiaoyiNeural';
+            const pitch = formatOffset(debugPitchSlider ? debugPitchSlider.value : 4, 'Hz');
+            const rate = formatOffset(debugRateSlider ? debugRateSlider.value : 0, '%');
+            const volume = formatOffset(debugVolumeSlider ? debugVolumeSlider.value : 0, '%');
+
+            window.xingcaiVoiceEngine.edgeVoice = voice;
+            window.xingcaiVoiceEngine.edgePitch = pitch;
+            window.xingcaiVoiceEngine.edgeRate = rate;
+            window.xingcaiVoiceEngine.edgeVolume = volume;
+
+            localStorage.setItem('xingcai_tts_voice', voice);
+            localStorage.setItem('xingcai_tts_pitch', pitch);
+            localStorage.setItem('xingcai_tts_rate', rate);
+            localStorage.setItem('xingcai_tts_volume', volume);
+        }
+
+        function playDebugTestAudio() {
+            applyCurrentDebugSettings();
+            const text = debugTestText ? debugTestText.value.trim() : '你好呀！';
+            if (!text) return;
+            if (window.xingcaiVoiceEngine) {
+                window.xingcaiVoiceEngine.speak(text);
+            }
+        }
+
+        if (debugPlayBtn) {
+            debugPlayBtn.addEventListener('click', playDebugTestAudio);
+        }
+
+        if (debugStopBtn) {
+            debugStopBtn.addEventListener('click', () => {
+                if (window.xingcaiVoiceEngine) {
+                    window.xingcaiVoiceEngine.stop();
+                }
+            });
+        }
+
+        if (debugApplyBtn) {
+            debugApplyBtn.addEventListener('click', () => {
+                applyCurrentDebugSettings();
+                debugApplyBtn.innerText = '✅ 已生效保存';
+                setTimeout(() => debugApplyBtn.innerText = '应用到当前对话', 1800);
+            });
+        }
+
+        // 复制参数按钮
+        if (debugCopyParamsBtn) {
+            debugCopyParamsBtn.addEventListener('click', () => {
+                applyCurrentDebugSettings();
+                const voice = debugVoiceSelect ? debugVoiceSelect.value : 'zh-CN-XiaoyiNeural';
+                const pitch = formatOffset(debugPitchSlider ? debugPitchSlider.value : 4, 'Hz');
+                const rate = formatOffset(debugRateSlider ? debugRateSlider.value : 0, '%');
+                const volume = formatOffset(debugVolumeSlider ? debugVolumeSlider.value : 0, '%');
+
+                const copyText = `【星彩声线调优参数】\n` +
+                    `发音人 (voice): ${voice}\n` +
+                    `音调 (pitch): ${pitch}\n` +
+                    `语速 (rate): ${rate}\n` +
+                    `音量 (volume): ${volume}\n` +
+                    `JSON格式: {"voice": "${voice}", "pitch": "${pitch}", "rate": "${rate}", "volume": "${volume}"}`;
+
+                navigator.clipboard.writeText(copyText).then(() => {
+                    const originHtml = debugCopyParamsBtn.innerHTML;
+                    debugCopyParamsBtn.innerHTML = '<span>✅</span> 参数已复制！发给我就行';
+                    setTimeout(() => {
+                        debugCopyParamsBtn.innerHTML = originHtml;
+                    }, 2500);
+                }).catch(err => {
+                    alert('复制失败，请手动记录参数:\n' + copyText);
+                });
+            });
+        }
+        // [TEMP_VOICE_DEBUG_SCRIPT_END]
     </script>
 </body>
 </html>
