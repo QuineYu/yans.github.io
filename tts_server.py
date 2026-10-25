@@ -15,11 +15,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 默认设置：知性轻柔的“晓伊”，+4Hz 微妙提升二次元知性少女感
-DEFAULT_VOICE = "zh-CN-XiaoyiNeural"
-DEFAULT_PITCH = "+4Hz"
-DEFAULT_RATE = "+0%"
-DEFAULT_VOLUME = "+0%"
+# 默认设置：深沉慵懒的“晓晓”，-8Hz 营造从容倦怠的千年魔女感
+DEFAULT_VOICE = "zh-CN-XiaoxiaoNeural"
+DEFAULT_PITCH = "-8Hz"
+DEFAULT_RATE = "-5%"
+DEFAULT_VOLUME = "-15%"
 
 @app.get("/")
 @app.get("/health")
