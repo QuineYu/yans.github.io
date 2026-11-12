@@ -1189,6 +1189,9 @@
         </div>
 
         <div class="nav-actions">
+            <button class="nav-btn" id="navMuteBtn" title="当前正常发声，点击开启静音">
+                <span id="navMuteIcon">🔊</span>
+            </button>
             <button class="nav-btn" id="openSettingsBtn" title="配置本地大模型接口">
                 <span>⚙️</span> 模型设置
             </button>
@@ -1302,6 +1305,19 @@
                             <span>🔍</span> 测试网络连接
                         </button>
                         <div id="testConnResult" style="font-size:13px;line-height:1.6;font-weight:500;min-height:20px;word-break:break-word;"></div>
+                    </div>
+
+                    <!-- 语音声音与静音控制 -->
+                    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:10px 14px;margin-bottom:12px;">
+                        <div style="display:flex;flex-direction:column;gap:2px;">
+                            <span style="font-size:13px;font-weight:600;color:#e2e8f0;display:flex;align-items:center;gap:6px;">
+                                <span id="voiceMuteIcon">🔊</span> 语音声音播报
+                            </span>
+                            <small id="voiceMuteHint" style="font-size:11px;color:#94a3b8;">当前：语音开启（正常发声）</small>
+                        </div>
+                        <button type="button" id="modalMuteBtn" class="nav-btn" style="padding:6px 14px;font-size:12px;display:flex;align-items:center;gap:6px;border-radius:8px;cursor:pointer;">
+                            <span id="modalMuteBtnText">🔇 开启静音</span>
+                        </button>
                     </div>
 
                     <!-- 1. 脱敏显示区 (锁定状态) -->
@@ -1460,6 +1476,13 @@
         const testConnectionBtn = document.getElementById('testConnectionBtn');
         const testConnResult = document.getElementById('testConnResult');
 
+        const navMuteBtn = document.getElementById('navMuteBtn');
+        const navMuteIcon = document.getElementById('navMuteIcon');
+        const modalMuteBtn = document.getElementById('modalMuteBtn');
+        const modalMuteBtnText = document.getElementById('modalMuteBtnText');
+        const voiceMuteIcon = document.getElementById('voiceMuteIcon');
+        const voiceMuteHint = document.getElementById('voiceMuteHint');
+
         const groupMaskedUrl = document.getElementById('groupMaskedUrl');
         const settingBaseUrlMasked = document.getElementById('settingBaseUrlMasked');
         const maskedStatusHint = document.getElementById('maskedStatusHint');
@@ -1535,8 +1558,60 @@
                 this.audioQueue = [];
                 this.isPlayingQueue = false;
 
+                // 静音控制状态 (持久化存储)
+                this.isMuted = localStorage.getItem('xingcai_voice_muted') === 'true';
+
                 // 检测本地 Edge-TTS 服务状态
                 this.checkEdgeTtsHealth();
+            }
+
+            setMuted(muted) {
+                this.isMuted = !!muted;
+                localStorage.setItem('xingcai_voice_muted', this.isMuted ? 'true' : 'false');
+                if (this.isMuted) {
+                    this.stop();
+                }
+                this.updateMuteUI();
+            }
+
+            toggleMute() {
+                this.setMuted(!this.isMuted);
+                return this.isMuted;
+            }
+
+            updateMuteUI() {
+                if (navMuteIcon) {
+                    navMuteIcon.textContent = this.isMuted ? '🔇' : '🔊';
+                }
+                if (navMuteBtn) {
+                    navMuteBtn.title = this.isMuted ? '当前已静音，点击恢复发声' : '当前正常发声，点击开启静音';
+                    if (this.isMuted) {
+                        navMuteBtn.style.color = '#f87171';
+                    } else {
+                        navMuteBtn.style.color = '';
+                    }
+                }
+                if (voiceMuteIcon) {
+                    voiceMuteIcon.textContent = this.isMuted ? '🔇' : '🔊';
+                }
+                if (voiceMuteHint) {
+                    voiceMuteHint.textContent = this.isMuted ? '当前：已开启静音（不会发出语音）' : '当前：语音开启（正常发声）';
+                    voiceMuteHint.style.color = this.isMuted ? '#f87171' : '#94a3b8';
+                }
+                if (modalMuteBtnText) {
+                    modalMuteBtnText.textContent = this.isMuted ? '🔊 恢复发声' : '🔇 开启静音';
+                }
+                if (modalMuteBtn) {
+                    if (this.isMuted) {
+                        modalMuteBtn.style.background = 'rgba(239, 68, 68, 0.15)';
+                        modalMuteBtn.style.border = '1px solid rgba(239, 68, 68, 0.35)';
+                        modalMuteBtn.style.color = '#fca5a5';
+                    } else {
+                        modalMuteBtn.style.background = '';
+                        modalMuteBtn.style.border = '';
+                        modalMuteBtn.style.color = '';
+                    }
+                }
             }
 
             async checkEdgeTtsHealth() {
@@ -1642,6 +1717,10 @@
 
             speak(text, onStart, onEnd) {
                 this.stop();
+                if (this.isMuted) {
+                    if (onEnd) onEnd();
+                    return;
+                }
                 const clean = this.cleanText(text);
                 if (!clean) {
                     if (onEnd) onEnd();
@@ -1802,6 +1881,11 @@
             }
 
             playNext() {
+                if (this.voiceEngine && this.voiceEngine.isMuted) {
+                    this.queue = [];
+                    this.isPlaying = false;
+                    return;
+                }
                 if (this.isPlaying || this.queue.length === 0) return;
                 const text = this.queue.shift();
                 this.isPlaying = true;
@@ -1829,6 +1913,9 @@
             } else {
                 window.localLLMClient.baseUrl = '';
             }
+
+            // 初始化静音 UI 状态
+            voiceEngine.updateMuteUI();
 
             loadStarHistory();
             await checkServerStatus();
@@ -3273,6 +3360,18 @@
                 setTimeout(() => copyCipherBtn.innerText = oldText, 2500);
             });
         });
+
+        if (navMuteBtn) {
+            navMuteBtn.addEventListener('click', () => {
+                voiceEngine.toggleMute();
+            });
+        }
+
+        if (modalMuteBtn) {
+            modalMuteBtn.addEventListener('click', () => {
+                voiceEngine.toggleMute();
+            });
+        }
     </script>
 </body>
 </html>
