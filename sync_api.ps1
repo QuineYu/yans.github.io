@@ -1,4 +1,9 @@
-﻿# 设置控制台输出编码为 UTF-8
+﻿param(
+    [Parameter(Position=0)]
+    [string]$Cipher = ""
+)
+
+# 设置控制台输出编码为 UTF-8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 Write-Host "==========================================================" -ForegroundColor Cyan
@@ -15,40 +20,40 @@ if (-not (Test-Path $targetFile)) {
     exit 1
 }
 
-# 尝试从剪贴板读取密文
-$clipText = ""
-try {
-    $clipText = (Get-Clipboard -Raw 2>$null)
-    if ($clipText) { $clipText = $clipText.Trim() }
-} catch {}
-
-$cipher = ""
-$isFromClip = $false
-
-if ($clipText -and $clipText.Length -gt 20) {
-    # 验证是否为合法 Base64 且包含 salt/iv 等特征
+# 检查是否通过参数传入密文
+if (-not $Cipher) {
+    # 尝试从剪贴板读取密文
+    $clipText = ""
     try {
-        $decoded = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($clipText))
-        if ($decoded -match '"salt"' -and $decoded -match '"iv"') {
-            $isFromClip = $true
-        }
+        $clipText = (Get-Clipboard -Raw 2>$null)
+        if ($clipText) { $clipText = $clipText.Trim() }
     } catch {}
-}
 
-if ($isFromClip) {
-    $preview = $clipText.Substring(0, [Math]::Min(35, $clipText.Length)) + "..."
-    Write-Host "📋 检测到剪贴板中已复制的 AES-256 密文：" -ForegroundColor Green
-    Write-Host "   $preview" -ForegroundColor Gray
-    Write-Host ""
-    $resp = Read-Host "👉 直接使用剪贴板中的密文？([Y]/n，按回车默认使用)"
-    if ($resp -eq "" -or $resp -match '^[Yy]') {
-        $cipher = $clipText
+    $isFromClip = $false
+    if ($clipText -and $clipText.Length -gt 20) {
+        try {
+            $decoded = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($clipText))
+            if ($decoded -match '"salt"' -and $decoded -match '"iv"') {
+                $isFromClip = $true
+            }
+        } catch {}
     }
-}
 
-if (-not $cipher) {
-    Write-Host "👉 请粘贴从网页设置中复制的 AES-256 密文 (右键即可粘贴):" -ForegroundColor Yellow
-    $cipher = (Read-Host).Trim()
+    if ($isFromClip) {
+        $preview = $clipText.Substring(0, [Math]::Min(35, $clipText.Length)) + "..."
+        Write-Host "📋 检测到剪贴板中已复制的 AES-256 密文：" -ForegroundColor Green
+        Write-Host "   $preview" -ForegroundColor Gray
+        Write-Host ""
+        $resp = Read-Host "👉 直接使用剪贴板中的密文？([Y]/n，按回车默认使用)"
+        if ($resp -eq "" -or $resp -match '^[Yy]') {
+            $Cipher = $clipText
+        }
+    }
+
+    if (-not $Cipher) {
+        Write-Host "👉 请粘贴从网页设置中复制的 AES-256 密文 (右键即可粘贴):" -ForegroundColor Yellow
+        $Cipher = (Read-Host).Trim()
+    }
 }
 
 if (-not $cipher) {
