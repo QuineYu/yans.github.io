@@ -538,7 +538,12 @@ class LocalLLMClient {
 
     loadSettings() {
         this.baseUrl = sessionStorage.getItem('llm_active_url') || '';
-        this.modelName = localStorage.getItem('llm_model_name') || 'qwen2.5:14b';
+        let storedModel = localStorage.getItem('llm_model_name');
+        if (!storedModel || storedModel === 'qwen2.5:14b' || storedModel === 'qwen2.5-14B') {
+            storedModel = 'xingcai';
+            localStorage.setItem('llm_model_name', storedModel);
+        }
+        this.modelName = storedModel;
         this.apiKey = localStorage.getItem('llm_api_key') || '';
         this.temperature = parseFloat(localStorage.getItem('llm_temperature') || '0.7');
 
