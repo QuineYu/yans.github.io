@@ -1,0 +1,12 @@
+# LLM 训练与微调本地工作区（不上传至 Git）
+llmtrain/
+*.zip
+
+# Python 缓存与临时文件
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 本地环境变量与配置文件
+.env
+*.local
