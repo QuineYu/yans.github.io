@@ -16,10 +16,10 @@ class Live2DMotionEngine {
         this.appModel = null;
         this.modelWrapper = null;
 
-        // 外观参数状态 (由 toggleJacket/toggleSkirt 动态切换)
-        this.jacketActive = false;
-        this.skirt1Active = false;
-        this.skirt2Active = false;
+        // 外观参数状态
+        this.jacketVisible = true; // Param2: 0 (着装), -1 (脱外套)
+        this.skirt1Visible = true; // Param
+        this.skirt2Visible = false; // Param3
 
         // 持续微表情
         this.currentBlush = 0;
@@ -585,16 +585,16 @@ class LocalLLMClient {
         this.apiKey = localStorage.getItem('llm_api_key') || '';
         this.temperature = parseFloat(localStorage.getItem('llm_temperature') || '0.7');
 
-        // 自动注入/恢复完整星彩系统提示词 (包含虚无宇宙、木棍飞行、工业流水线、物质复制等完整的星彩设定)
         let storedPrompt = localStorage.getItem('llm_system_prompt');
-        const PROMPT_VERSION_TAG = 'v6_restored_mindset';
+        // 自动恢复系统提示词为完整设定
+        const PROMPT_VERSION_TAG = 'v7_restored_prompt';
         const currentVersion = localStorage.getItem('llm_prompt_version');
         if (!storedPrompt || currentVersion !== PROMPT_VERSION_TAG || !storedPrompt.includes('木棍') || !storedPrompt.includes('工业流水线') || !storedPrompt.includes('生成物质')) {
             storedPrompt = DEFAULT_SYSTEM_PROMPT;
             localStorage.setItem('llm_system_prompt', storedPrompt);
             localStorage.setItem('llm_prompt_version', PROMPT_VERSION_TAG);
         }
-        this.systemPrompt = storedPrompt;
+        this.systemPrompt = storedPrompt || DEFAULT_SYSTEM_PROMPT;
     }
 
     saveSettings(config) {

@@ -1358,13 +1358,6 @@
                         <input type="password" id="settingNewPasswordInput" class="form-input" placeholder="输入新密码 (可选)">
                     </div>
 
-                    <!-- 5. 系统提示词配置区 (解锁后显示) -->
-                    <div class="form-group" id="groupSystemPrompt" style="display:none;">
-                        <label class="form-label">System Prompt (系统提示词)</label>
-                        <textarea id="settingSystemPrompt" class="form-input" rows="5" placeholder="输入系统提示词..." style="resize:vertical;font-size:12px;"></textarea>
-                        <small style="color:#64748b;font-size:12px;">星彩完整人设、心智模型、时空背景与动作表情标签已默认加载。支持在此微调或自定义。</small>
-                    </div>
-
 
 
                     <!-- 6. 源码防泄露密文同步面板 (解锁后可查看密文，便于填入 GitHub 源码) -->
@@ -1506,8 +1499,6 @@
 
         const groupChangePwd = document.getElementById('groupChangePwd');
         const settingNewPasswordInput = document.getElementById('settingNewPasswordInput');
-        const groupSystemPrompt = document.getElementById('groupSystemPrompt');
-        const settingSystemPrompt = document.getElementById('settingSystemPrompt');
 
         const groupGithubSync = document.getElementById('groupGithubSync');
         const copyCipherBtn = document.getElementById('copyCipherBtn');
@@ -3136,7 +3127,6 @@
                 unlockSettingsBtn.style.display = 'none';
                 unlockMsg.innerHTML = '<span style="color:#38bdf8;">💡 首次设置：请输入 API 地址并设置管理密码，系统将使用 AES-256 加密存储。</span>';
                 groupChangePwd.style.display = 'none';
-                if (groupSystemPrompt) groupSystemPrompt.style.display = 'none';
                 groupGithubSync.style.display = 'none';
                 lockNowBtn.style.display = 'none';
                 saveSettingsBtn.style.display = 'inline-block';
@@ -3155,7 +3145,6 @@
                 unlockSettingsBtn.style.display = 'inline-block';
                 unlockMsg.innerText = '';
                 groupChangePwd.style.display = 'none';
-                if (groupSystemPrompt) groupSystemPrompt.style.display = 'none';
                 groupGithubSync.style.display = 'none';
                 lockNowBtn.style.display = 'none';
                 saveSettingsBtn.style.display = 'none';
@@ -3172,10 +3161,6 @@
                 groupUnlockPwd.style.display = 'none';
                 groupChangePwd.style.display = 'flex';
                 settingNewPasswordInput.value = '';
-                if (groupSystemPrompt) {
-                    groupSystemPrompt.style.display = 'flex';
-                    settingSystemPrompt.value = window.localLLMClient.systemPrompt || '';
-                }
                 groupGithubSync.style.display = 'block';
                 cipherOutputText.value = cipher;
                 lockNowBtn.style.display = 'inline-block';
@@ -3303,8 +3288,7 @@
                 localStorage.removeItem('llm_base_url');
 
                 currentSessionPassword = pwdToUse;
-                const promptVal = settingSystemPrompt ? settingSystemPrompt.value.trim() : '';
-                window.localLLMClient.saveSettings({ baseUrl: rawUrl, systemPrompt: promptVal });
+                window.localLLMClient.saveSettings({ baseUrl: rawUrl });
                 sessionStorage.setItem('llm_active_url', rawUrl);
 
                 isSettingsUnlocked = false;
@@ -3358,8 +3342,6 @@
             if (!confirm('确定要清除所有 API 地址加密配置吗？')) return;
             localStorage.removeItem('llm_encrypted_payload');
             localStorage.removeItem('llm_base_url');
-            localStorage.removeItem('llm_system_prompt');
-            if (settingSystemPrompt) settingSystemPrompt.value = '';
             sessionStorage.removeItem('llm_active_url');
             window.localLLMClient.baseUrl = '';
             currentSessionPassword = '';
