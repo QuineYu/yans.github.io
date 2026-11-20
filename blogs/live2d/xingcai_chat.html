@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>星彩 Live2D - AI 版</title>
     <style>
         /* ==========================================================================
@@ -48,11 +48,13 @@
         body, html {
             width: 100%;
             height: 100%;
+            height: 100dvh;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             color: #f0f4f8;
             background-color: #0d1117;
             cursor: var(--app-cursor-default);
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* 全屏背景图片 */
@@ -904,7 +906,7 @@
             border: none;
             outline: none;
             color: #ffffff;
-            font-size: 15px;
+            font-size: 16px; /* 16px 防止移动端 iOS Safari 聚焦时页面强行放大 */
             padding: 6px 8px;
             user-select: text;
         }
@@ -1133,25 +1135,138 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* 响应式适配 */
+        /* 移动端与全平台深度响应式适配 */
         @media (max-width: 768px) {
             .top-navbar {
+                top: max(12px, env(safe-area-inset-top));
                 left: 10px;
                 right: 10px;
-                padding: 0 12px;
+                padding: 0;
+            }
+            .nav-actions {
+                gap: 6px;
+            }
+            .nav-btn {
+                padding: 6px 10px;
+                font-size: 12px;
+                border-radius: 8px;
+                gap: 4px;
             }
             .active-dialog-bubble {
                 right: 10px;
                 left: 10px;
                 width: auto;
-                bottom: 90px;
-                max-height: 50vh;
+                max-width: calc(100vw - 20px);
+                bottom: max(78px, calc(env(safe-area-inset-bottom, 14px) + 64px));
+                max-height: min(48vh, 48dvh);
+            }
+            .active-bubble-body {
+                max-height: calc(48dvh - 54px);
+                -webkit-overflow-scrolling: touch;
+                padding: 12px 14px;
+                gap: 10px;
+            }
+            .bubble-text {
+                font-size: 13.5px;
+                padding: 8px 12px;
             }
             .bottom-dock {
                 left: 10px;
                 right: 10px;
                 transform: none;
                 width: auto;
+                max-width: none;
+                bottom: max(14px, env(safe-area-inset-bottom));
+            }
+            .input-bar {
+                padding: 6px 12px;
+                border-radius: 20px;
+            }
+            .send-btn {
+                --send-btn-size: 38px;
+                border-radius: 10px;
+            }
+            /* 增大夜空星星在触摸屏上的点击热区，方便触控 */
+            .sky-star::after {
+                content: '';
+                position: absolute;
+                top: -12px;
+                left: -12px;
+                right: -12px;
+                bottom: -12px;
+                cursor: pointer;
+            }
+            /* 弹窗与设置抽屉移动端自适应 */
+            .history-bubble-card {
+                width: 100%;
+                max-width: min(520px, calc(100vw - 20px));
+                max-height: min(82vh, 82dvh);
+                border-radius: 18px;
+            }
+            .history-card-header {
+                padding: 12px 16px;
+            }
+            .history-card-body {
+                padding: 14px 16px;
+                gap: 12px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .history-card-footer {
+                padding: 10px 14px;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .history-card-footer .primary-action-btn {
+                flex: 1;
+                min-width: 80px;
+            }
+            .drawer-box {
+                width: 100%;
+                max-width: min(520px, calc(100vw - 20px));
+                max-height: min(86vh, 86dvh);
+                border-radius: 18px;
+            }
+            .drawer-header {
+                padding: 14px 16px;
+            }
+            .drawer-content {
+                padding: 16px 14px;
+                gap: 14px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .drawer-footer {
+                padding: 12px 16px;
+            }
+            .form-input {
+                font-size: 15px;
+            }
+        }
+
+        @media (max-width: 440px) {
+            .nav-actions {
+                gap: 4px;
+            }
+            .nav-btn {
+                padding: 6px 8px;
+                font-size: 11.5px;
+            }
+            .nav-btn-text-full {
+                display: none;
+            }
+            .nav-btn-text-short {
+                display: inline;
+            }
+            .active-dialog-bubble {
+                bottom: max(74px, calc(env(safe-area-inset-bottom, 12px) + 60px));
+            }
+        }
+
+        @media (min-width: 441px) {
+            .nav-btn-text-full {
+                display: inline;
+            }
+            .nav-btn-text-short {
+                display: none;
             }
         }
     </style>
@@ -1160,7 +1275,9 @@
     <script>
         window.hideLive2DBackground = true;
         window.hideLive2DGear = true;
-        window.live2dModelScale = 0.9; // 模型缩小至当前的 90%
+        // 移动端视口自适应缩放比例
+        var initIsNarrow = window.innerWidth <= 768;
+        window.live2dModelScale = initIsNarrow ? (window.innerWidth <= 480 ? 0.76 : 0.82) : 0.9;
     </script>
 
     <!-- Live2D Cubism Core & 依赖 -->
@@ -1193,10 +1310,14 @@
                 <span id="navMuteIcon">🔊</span>
             </button>
             <button class="nav-btn" id="openSettingsBtn" title="配置本地大模型接口">
-                <span>⚙️</span> 模型设置
+                <span>⚙️</span>
+                <span class="nav-btn-text-full">模型设置</span>
+                <span class="nav-btn-text-short">设置</span>
             </button>
             <button class="nav-btn" id="clearChatBtn" title="清理夜空中的所有对话星辰并重置对话记忆">
-                <span>🧹</span> 清理星空
+                <span>🧹</span>
+                <span class="nav-btn-text-full">清理星空</span>
+                <span class="nav-btn-text-short">清理</span>
             </button>
         </div>
     </header>
@@ -2815,6 +2936,35 @@
             }
         });
         sendBtn.addEventListener('click', handleSend);
+
+        // 移动端软键盘弹起与安全区高度自适应
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                const bottomDock = document.querySelector('.bottom-dock');
+                const activeBubble = document.getElementById('activeDialogBubble');
+                const vh = window.innerHeight;
+                const vvH = window.visualViewport.height;
+                const offset = vh - vvH - (window.visualViewport.offsetTop || 0);
+                if (offset > 60) {
+                    // 软键盘弹起
+                    if (bottomDock) bottomDock.style.bottom = `${offset + 8}px`;
+                    if (activeBubble) activeBubble.style.bottom = `${offset + 64}px`;
+                } else {
+                    // 软键盘收起
+                    if (bottomDock) bottomDock.style.bottom = '';
+                    if (activeBubble) activeBubble.style.bottom = '';
+                }
+            });
+        }
+
+        // 窗口旋转与移动端自适应调整 Live2D 模型缩放比例
+        window.addEventListener('resize', () => {
+            if (window.live2dMotionEngine && typeof window.live2dMotionEngine.setModelScale === 'function') {
+                const isNarrow = window.innerWidth <= 768;
+                const targetScale = isNarrow ? (window.innerWidth <= 480 ? 0.76 : 0.82) : 0.9;
+                window.live2dMotionEngine.setModelScale(targetScale);
+            }
+        });
 
         async function sendToLocalLLM(textEl, time) {
             let fullContent = '';

@@ -1,61 +1,387 @@
 <!DOCTYPE html>
-<html>
-	<head>
-		<title> For My Love </title>
-		<meta charset="utf-8" />
-		<style type="text/css">
-			.bkg{position:fixed;top: 0;left: 0;width:100%;height:100%;z-index:-10;zoom: 1;
-			      background-image: url('../myimages/background.jpg');background-repeat: no-repeat;background-size: cover;
-			      background-position: center 0;
-			    }
-			.he{text-align:center;font-family:times;color:#FF8000;font-size:150%;z-index:2;}
-			.time{width: 100%;text-align:center;font-family:times;color:gray;font-size:90%;z-index:1;}
-			a{text-decoration:none}
-			.blog{position: absolute;left: 25%;right: 25%;z-index:3;}
-			.footer{position: absolute;bottom:0;left: 0;right: 0;text-align:center;color:white;}
-			.Audio{position: relative; width: 500px; margin: 0 auto;}
-			.pic{text-align: center; position: relative; width: 200px; height: 200px;left:150px;background-image: url('../myimages/photo1.jpg');background-repeat: no-repeat;background-size: 100% 100%;}
-			.pgs{width: 326px; margin: 0 auto 30px; background-color: #F5EDF3; text-align: center; position: relative; overflow: hidden; height: 25px;}
-			.pgs-play{position: absolute; top:0; left: 4.65%; width: 0; height: 100%; background-color: #FF8000; z-index: 3;}
-			.pgs img{width: 100%; position: relative; z-index: 4;}
-			.audio-name{position: absolute; top: 0; width: 100%; left: 0;text-align: center; color: #666; font-size: 12px;}
-			.controls{width: 100%; height: 40px; padding: 0; text-align: center;}
-			.play-pause{border: 0; outline: 0; padding: 0; width: 40px; height: 40px; margin: 0 28px; background: none; display: inline-block; vertical-align: middle;}
-			.icon-play{width: 40px; height: 40px; background: url(../myimages/play.png) no-repeat; display: block;background-size: 100% 100%}
-			.icon-pause{width: 40px; height: 40px; background: url(../myimages/pruse.png) no-repeat; display: block;background-size: 100% 100%}
-			.controls span{color: #b3b5b7; font-size: 12px; display: inline-block; width: 34px;}
-			.audio-time{display: inline-block; vertical-align: middle;}
-		</style>
-		
-	</head>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>For My Love</title>
+    <style type="text/css">
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-	<body>
-		<script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"></script>
-		<script type="text/javaScript" src="./music.js"></script>
-		<div class="bkg">
-			<a href="../index.html" style="font-style:times;color:white">Yan's Blog</a>
-			<div class="he"><br> For My Love <br></div>
-			<div class="time"><br>08/28-2023<br></div>	
-			<br>
-			<div class="Audio">
-				<div class="pic"></div>
-				<br>
-				<audio id="audioTag" src="../myfiles/xyl.mp3" ></audio>
-				<div class="pgs">
-					<div class="pgs-play" id="progress" style="width: 20%;"></div>
-					<img src="../myimages/progress.png">
-	  			</div>
-  			  <div class="controls">
-  			      <span class="played-time">00:00</span>
-   			      <button class="play-pause" id="playPause"><span class="icon-btn icon-play"></span></button>
-  			      <span class="audio-time" id="audioTime">0</span>
-  			  </div>
-			</div>
-			
-			<div class="footer">
-				<a href="../daily" style="color:white">日月之行</a>&nbsp;&nbsp;&nbsp|&nbsp;&nbsp;&nbsp
-				<a href="../study" style="color:white">天之苍苍</a>
-			</div>
-		</div>
-	</body>
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Times New Roman", Times, "Songti SC", serif;
+            color: #ffffff;
+            background-color: #0b0f19;
+        }
+
+        .bkg {
+            min-height: 100vh;
+            min-height: 100dvh;
+            width: 100%;
+            position: relative;
+            background-image: url('../myimages/background.jpg');
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center center;
+            background-attachment: fixed;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: max(20px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+        }
+
+        .bkg::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(11, 15, 25, 0.3) 0%, rgba(5, 8, 16, 0.75) 100%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* 顶部导航 */
+        .top-nav {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 520px;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .back-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 16px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            color: #f1f5f9;
+            font-size: 14px;
+            text-decoration: none;
+            transition: all 0.22s ease;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+        }
+
+        .back-pill:hover {
+            color: #38bdf8;
+            background: rgba(30, 41, 59, 0.85);
+            transform: translateY(-1px);
+        }
+
+        .back-pill:active {
+            transform: scale(0.96);
+        }
+
+        /* 主体内容区 */
+        .main-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            margin: 10px 0 24px;
+        }
+
+        .header-box {
+            text-align: center;
+            margin-bottom: 20px;
+            animation: fadeInDown 0.7s ease-out;
+        }
+
+        .page-title {
+            font-size: clamp(1.8rem, 5vw, 2.3rem);
+            color: #FF8000;
+            letter-spacing: 2px;
+            text-shadow: 0 4px 16px rgba(0, 0, 0, 0.7), 0 0 12px rgba(255, 128, 0, 0.25);
+            margin-bottom: 6px;
+        }
+
+        .date-badge {
+            display: inline-block;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 4px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* 音乐卡片播放器容器 */
+        .Audio {
+            width: min(92vw, 420px);
+            margin: 0 auto;
+            padding: 28px 24px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        /* 唱片黑胶封面 */
+        .pic {
+            width: min(180px, 48vw);
+            height: min(180px, 48vw);
+            border-radius: 50%;
+            background-image: url('../myimages/photo1.jpg');
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center center;
+            border: 4px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), inset 0 0 0 8px rgba(0, 0, 0, 0.35);
+            margin-bottom: 24px;
+            transition: transform 0.4s ease;
+        }
+
+        .pic.playing {
+            animation: rotateRecord 20s linear infinite;
+        }
+
+        @keyframes rotateRecord {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 进度条 */
+        .pgs {
+            width: 100%;
+            max-width: 320px;
+            height: 24px;
+            margin: 0 auto 20px;
+            background-color: rgba(245, 237, 243, 0.15);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            touch-action: none;
+        }
+
+        .pgs-play {
+            position: absolute;
+            top: 0;
+            left: 4.65%;
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #FF8000 0%, #fb923c 100%);
+            border-radius: 12px;
+            z-index: 1;
+            transition: width 0.1s linear;
+        }
+
+        .pgs img {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            z-index: 2;
+            pointer-events: none;
+            opacity: 0.9;
+        }
+
+        /* 控制器 */
+        .controls {
+            width: 100%;
+            max-width: 320px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 6px;
+        }
+
+        .controls span {
+            color: #94a3b8;
+            font-size: 13px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+            min-width: 44px;
+            text-align: center;
+            user-select: none;
+        }
+
+        .play-pause {
+            border: none;
+            outline: none;
+            background: transparent;
+            cursor: pointer;
+            padding: 0;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .play-pause:hover {
+            transform: scale(1.1);
+        }
+
+        .play-pause:active {
+            transform: scale(0.92);
+        }
+
+        .icon-btn {
+            width: 44px;
+            height: 44px;
+            display: block;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
+        }
+
+        .icon-play {
+            background-image: url('../myimages/play.png');
+        }
+
+        .icon-pause {
+            background-image: url('../myimages/pruse.png');
+        }
+
+        /* 底部导航栏：玻璃拟态触控卡片 */
+        .footer-nav {
+            position: relative;
+            z-index: 1;
+            margin: 20px auto 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 999px;
+            padding: 8px 22px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .nav-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 38px;
+            padding: 6px 14px;
+            font-size: 15px;
+            color: #94a3b8;
+            text-decoration: none;
+            letter-spacing: 1px;
+            border-radius: 999px;
+            transition: all 0.22s ease;
+            user-select: none;
+        }
+
+        .nav-pill:hover {
+            color: #38bdf8;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-pill:active {
+            transform: scale(0.95);
+        }
+
+        .nav-divider {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            user-select: none;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 480px) {
+            .Audio {
+                padding: 22px 18px;
+                border-radius: 20px;
+            }
+            .footer-nav {
+                padding: 6px 16px;
+                gap: 8px;
+            }
+            .nav-pill {
+                padding: 6px 10px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"></script>
+    <script type="text/javascript" src="./music.js"></script>
+
+    <div class="bkg">
+        <header class="top-nav">
+            <a href="../daily.html" class="back-pill" title="返回文章列表">
+                <span>←</span> 返回文章列表
+            </a>
+        </header>
+
+        <main class="main-container">
+            <div class="header-box">
+                <h1 class="page-title">For My Love</h1>
+                <time class="date-badge" datetime="2023-08-28">08/28-2023</time>
+            </div>
+
+            <div class="Audio" role="region" aria-label="音乐播放器">
+                <div class="pic" id="albumCover" role="img" aria-label="专辑封面"></div>
+                <audio id="audioTag" src="../myfiles/xyl.mp3" preload="metadata"></audio>
+                
+                <div class="pgs" id="progressBar" title="点击或拖动调节进度">
+                    <div class="pgs-play" id="progress"></div>
+                    <img src="../myimages/progress.png" alt="进度条纹理">
+                </div>
+
+                <div class="controls">
+                    <span class="played-time">00:00</span>
+                    <button class="play-pause" id="playPause" aria-label="播放或暂停">
+                        <span class="icon-btn icon-play"></span>
+                    </button>
+                    <span class="audio-time" id="audioTime">00:00</span>
+                </div>
+            </div>
+        </main>
+
+        <nav class="footer-nav" aria-label="页面导航">
+            <a href="../daily.html" class="nav-pill">日月之行</a>
+            <span class="nav-divider">|</span>
+            <a href="../study.html" class="nav-pill">天之苍苍</a>
+        </nav>
+    </div>
+</body>
 </html>

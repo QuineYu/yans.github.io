@@ -1,34 +1,268 @@
-<html>
-	<head>
-		<title> 日月之行 </title>
-		<meta charset="utf-8" />
-		<style type="text/css">
-			.bkg{position:fixed;top: 0;left: 0;width:100%;height:100%;z-index:0;zoom: 1;
-			      background-image: url('myimages/background.jpg');background-repeat: no-repeat;background-size: cover;
-			      background-position: center 0;
-			    }
-			.he{text-align:center;font-family:times;color:white;font-size:150%;z-index:2;}
-			.ph{text-align:center;font-family:times;color:gray;font-size:90%;z-index:1}
-			a{text-decoration:none}
-			.blog{position: absolute;left: 25%;right: 25%;z-index:3;}
-			time{position: absolute;right: 0;color:white;}
-			.footer{position: absolute;bottom:0;left: 0;right: 0;text-align:center;color:white;}
-		</style>
-	</head>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>日月之行</title>
+    <style type="text/css">
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-	<body>
-		<div class="bkg">
-			<div class="he"><br><a href="./index.html" style="font-style:times;color:white">Yan's Blog</a><br></div>
-			<div class="ph"><br>日月之行 若出其中 ; 星汉灿烂 若出其里<br></div>
-			<div class="blog">
-				<a href="./blogs/for_my_love.html" style="color:FF8000">For My Love</a>
-				<time>08/28-2023</time>
-			
-			</div>
-			<div class="footer">
-				<a href="./daily" style="color:grey">日月之行</a>&nbsp;&nbsp;&nbsp|&nbsp;&nbsp;&nbsp
-				<a href="./study" style="color:white">天之苍苍</a>
-			</div>
-		</div>
-	</body>
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Times New Roman", Times, "Songti SC", serif;
+            color: #ffffff;
+            background-color: #0b0f19;
+        }
+
+        .bkg {
+            min-height: 100vh;
+            min-height: 100dvh;
+            width: 100%;
+            position: relative;
+            background-image: url('myimages/background.jpg');
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center center;
+            background-attachment: fixed;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: max(24px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+        }
+
+        .bkg::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(11, 15, 25, 0.3) 0%, rgba(5, 8, 16, 0.75) 100%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .content-wrap {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 680px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header-box {
+            text-align: center;
+            margin-bottom: 24px;
+            animation: fadeInDown 0.7s ease-out;
+        }
+
+        .home-link {
+            display: inline-block;
+            font-size: clamp(1.8rem, 5vw, 2.4rem);
+            font-weight: 500;
+            color: #ffffff;
+            text-decoration: none;
+            letter-spacing: 2px;
+            text-shadow: 0 4px 16px rgba(0, 0, 0, 0.7), 0 0 10px rgba(255, 255, 255, 0.2);
+            transition: all 0.22s ease;
+        }
+
+        .home-link:hover {
+            color: #38bdf8;
+            transform: translateY(-1px);
+        }
+
+        .poem-quote {
+            margin-top: 10px;
+            color: #cbd5e1;
+            font-size: clamp(0.9rem, 2.6vw, 1.05rem);
+            letter-spacing: 2px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+            line-height: 1.6;
+        }
+
+        /* 博客文章列表 */
+        .blog-list {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 8px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .blog-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px 20px;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            text-decoration: none;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .blog-card:hover {
+            background: rgba(30, 41, 59, 0.85);
+            border-color: rgba(255, 128, 0, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+        }
+
+        .blog-card:active {
+            transform: scale(0.98);
+            background: rgba(30, 41, 59, 0.95);
+        }
+
+        .blog-title {
+            font-size: 1.05rem;
+            font-weight: 500;
+            color: #FF8000;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            word-break: break-word;
+        }
+
+        .blog-time {
+            font-size: 0.82rem;
+            color: #94a3b8;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 4px 10px;
+            border-radius: 8px;
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        /* 底部导航栏：玻璃拟态触控卡片 */
+        .footer-nav {
+            position: relative;
+            z-index: 1;
+            margin: 28px auto 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 999px;
+            padding: 8px 22px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .nav-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 38px;
+            padding: 6px 14px;
+            font-size: 15px;
+            color: #94a3b8;
+            text-decoration: none;
+            letter-spacing: 1px;
+            border-radius: 999px;
+            transition: all 0.22s ease;
+            user-select: none;
+        }
+
+        .nav-pill.active {
+            color: #FF8000;
+            font-weight: 600;
+            background: rgba(255, 128, 0, 0.15);
+        }
+
+        .nav-pill:not(.active):hover {
+            color: #38bdf8;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-pill:active {
+            transform: scale(0.95);
+        }
+
+        .nav-divider {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            user-select: none;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 480px) {
+            .blog-card {
+                padding: 14px 16px;
+            }
+            .blog-title {
+                font-size: 0.98rem;
+            }
+            .blog-time {
+                font-size: 0.78rem;
+                padding: 3px 8px;
+            }
+            .footer-nav {
+                padding: 6px 16px;
+                gap: 8px;
+            }
+            .nav-pill {
+                padding: 6px 10px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bkg">
+        <div class="content-wrap">
+            <header class="header-box">
+                <a href="./index.html" class="home-link">Yan's Blog</a>
+                <p class="poem-quote">日月之行 若出其中 ； 星汉灿烂 若出其里</p>
+            </header>
+
+            <main class="blog-list" role="feed">
+                <a href="./blogs/for_my_love.html" class="blog-card" title="For My Love">
+                    <span class="blog-title">For My Love</span>
+                    <time class="blog-time" datetime="2023-08-28">08/28-2023</time>
+                </a>
+            </main>
+        </div>
+
+        <nav class="footer-nav" aria-label="页面导航">
+            <a href="./daily.html" class="nav-pill active" aria-current="page">日月之行</a>
+            <span class="nav-divider">|</span>
+            <a href="./study.html" class="nav-pill">天之苍苍</a>
+        </nav>
+    </div>
+</body>
 </html>
