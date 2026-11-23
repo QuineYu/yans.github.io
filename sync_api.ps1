@@ -33,7 +33,7 @@ if (-not $Cipher) {
     if ($clipText -and $clipText.Length -gt 20) {
         try {
             $decoded = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($clipText))
-            if ($decoded -match '"salt"' -and $decoded -match '"iv"') {
+            if (($decoded -match '"salt"' -and $decoded -match '"iv"') -or ($decoded -match '"version"' -and $decoded -match '"admin"')) {
                 $isFromClip = $true
             }
         } catch {}
@@ -65,7 +65,7 @@ if (-not $cipher) {
 # 校验密文有效性
 try {
     $decoded = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($cipher))
-    if (-not ($decoded -match '"salt"' -and $decoded -match '"iv"')) {
+    if (-not (($decoded -match '"salt"' -and $decoded -match '"iv"') -or ($decoded -match '"version"' -and $decoded -match '"admin"'))) {
         Write-Host "⚠️ 警告：输入的字符串看起来可能不是网页生成的标准 AES 密文，但仍将尝试写入。" -ForegroundColor Yellow
     }
 } catch {

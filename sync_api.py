@@ -33,7 +33,8 @@ if not cipher:
 try:
     decoded = base64.b64decode(cipher).decode("utf-8")
     data = json.loads(decoded)
-    if "salt" not in data or "iv" not in data:
+    has_valid_structure = ("salt" in data and "iv" in data) or ("version" in data and "admin" in data)
+    if not has_valid_structure:
         print("⚠️ 提示：密文字符串特征不匹配标准 AES 结构，但仍将尝试写入。")
 except Exception:
     pass

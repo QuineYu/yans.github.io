@@ -1420,12 +1420,15 @@
                 <input type="text" name="fake_username_trap" style="display:none;" tabindex="-1" autocomplete="username">
                 <input type="password" name="fake_password_trap" style="display:none;" tabindex="-1" autocomplete="current-password">
                 <div class="drawer-content">
-                    <!-- 顶部居中放大的测试网络连接区域 -->
-                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 12px;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);border-radius:14px;text-align:center;gap:10px;margin-bottom:6px;">
-                        <button class="primary-action-btn" id="testConnectionBtn" type="button" style="padding:13px 36px;font-size:16px;font-weight:600;border-radius:14px;gap:8px;box-shadow:0 6px 20px rgba(2,132,199,0.5);cursor:pointer;letter-spacing:0.5px;">
-                            <span>🔍</span> 测试网络连接
-                        </button>
-                        <div id="testConnResult" style="font-size:13px;line-height:1.6;font-weight:500;min-height:20px;word-break:break-word;"></div>
+                    <!-- 提示区域：密码使用说明及离线功能引导 -->
+                    <div id="settingsNoticeBanner" style="background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.22);border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:12px;line-height:1.6;color:#cbd5e1;">
+                        <div style="font-weight:600;color:#38bdf8;margin-bottom:4px;display:flex;align-items:center;gap:6px;">
+                            <span>💡</span> <span>使用提示</span>
+                        </div>
+                        <div>
+                            • <b>在线智能对话</b>：需输入密码解锁后方可使用大模型服务。<br>
+                            • <b>若无访问密码</b>：请与作者联系获取，或直接点击下方【关闭】体验内置的<b>离线互动功能</b>。
+                        </div>
                     </div>
 
                     <!-- 语音声音与静音控制 -->
@@ -1441,6 +1444,16 @@
                         </button>
                     </div>
 
+                    <!-- 只读访客状态卡片 (只读解锁后显示) -->
+                    <div id="groupReadonlyActive" style="display:none;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.25);border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:12px;line-height:1.6;color:#e2e8f0;">
+                        <div style="font-weight:600;color:#34d399;margin-bottom:4px;display:flex;align-items:center;gap:6px;">
+                            <span>👤</span> <span>当前为访客只读模式</span>
+                        </div>
+                        <div style="color:#94a3b8;">
+                            大模型服务已连接，您可在此畅享 AI 对话。敏感接口与管理信息已受到锁定保护。
+                        </div>
+                    </div>
+
                     <!-- 1. 脱敏显示区 (锁定状态) -->
                     <div class="form-group" id="groupMaskedUrl">
                         <label class="form-label">API 地址 (Base URL)</label>
@@ -1450,13 +1463,16 @@
                                 🔒 已加密隐藏
                             </span>
                         </div>
-                        <small id="maskedStatusHint" style="color:#64748b;font-size:12px;">已开启安全保护：源码与网页中均无明文，输入密码解锁后方可查看或修改</small>
+                        <small id="maskedStatusHint" style="color:#64748b;font-size:12px;">已开启安全保护：源码与网页中均无明文，输入密码解锁后方可使用</small>
                     </div>
 
                     <!-- 2. 明文/编辑区 (解锁后显示) -->
                     <div class="form-group" id="groupRealUrl" style="display:none;">
                         <div style="display:flex;justify-content:space-between;align-items:center;">
-                            <label class="form-label">API 地址 (Base URL)</label>
+                            <label class="form-label" style="display:flex;align-items:center;gap:6px;">
+                                <span>API 地址 (Base URL)</span>
+                                <span style="font-size:11px;color:#34d399;background:rgba(52,211,153,0.15);padding:1px 6px;border-radius:4px;">👑 管理员</span>
+                            </label>
                             <button type="button" id="toggleUrlPlainBtn" style="background:none;border:none;color:#38bdf8;font-size:12px;cursor:pointer;padding:2px 4px;">👁️ 显示明文</button>
                         </div>
                         <input type="password" id="settingBaseUrl" class="form-input" placeholder="http://localhost:11434/v1" autocomplete="off">
@@ -1465,18 +1481,36 @@
 
                     <!-- 3. 输入密码解锁区 (未解锁时显示) -->
                     <div class="form-group" id="groupUnlockPwd">
-                        <label class="form-label" id="pwdPromptLabel">输入管理密码以查看或更改</label>
+                        <label class="form-label" id="pwdPromptLabel">输入访问密码解锁服务</label>
                         <div style="display:flex;gap:8px;">
-                            <input type="password" id="settingPasswordInput" class="form-input" placeholder="输入密码解锁..." style="flex:1;">
+                            <input type="password" id="settingPasswordInput" class="form-input" placeholder="输入管理密码或访客只读密码..." style="flex:1;">
                             <button class="nav-btn" id="unlockSettingsBtn" type="button">🔓 解锁</button>
                         </div>
                         <div id="unlockMsg" style="font-size:12px;min-height:18px;margin-top:2px;"></div>
+                        <small style="color:#64748b;font-size:11px;margin-top:2px;display:block;">
+                            💡 支持输入【管理密码】（管理与配置）或【只读密码】（仅联网使用）。若无密码请联系作者获取。
+                        </small>
                     </div>
 
                     <!-- 4. 修改密码区 (解锁后显示) -->
-                    <div class="form-group" id="groupChangePwd" style="display:none;">
-                        <label class="form-label">更改访问密码 (可选，留空则保持当前密码)</label>
-                        <input type="password" id="settingNewPasswordInput" class="form-input" placeholder="输入新密码 (可选)">
+                    <div class="form-group" id="groupChangePwd" style="display:none;flex-direction:column;gap:10px;">
+                        <div>
+                            <label class="form-label">更改管理密码 (拥有查看/修改 API 完整权限)</label>
+                            <input type="password" id="settingNewAdminPwd" class="form-input" placeholder="输入新管理密码 (留空保持原密码)">
+                        </div>
+                        <div>
+                            <label class="form-label">设置/更改访客只读密码 (仅对话使用，无管理权限)</label>
+                            <input type="password" id="settingNewReadonlyPwd" class="form-input" placeholder="输入访客只读密码 (留空保持原设置)">
+                            <small style="color:#64748b;font-size:11px;display:block;margin-top:2px;">💡 访客输入该密码后仅能联网对话，无法查看明文 API 或更改设置。</small>
+                        </div>
+                    </div>
+
+                    <!-- 5. 测试网络连接区域 (放置在输入密码与配置之后) -->
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 12px;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);border-radius:14px;text-align:center;gap:10px;margin-top:8px;margin-bottom:8px;">
+                        <button class="primary-action-btn" id="testConnectionBtn" type="button" style="padding:12px 34px;font-size:15px;font-weight:600;border-radius:12px;gap:8px;box-shadow:0 6px 20px rgba(2,132,199,0.5);cursor:pointer;letter-spacing:0.5px;">
+                            <span>🔍</span> 测试网络连接
+                        </button>
+                        <div id="testConnResult" style="font-size:13px;line-height:1.6;font-weight:500;min-height:20px;word-break:break-word;"></div>
                     </div>
 
 
@@ -1498,7 +1532,7 @@
                 <button class="nav-btn" id="resetSettingsBtn" type="button">清除配置</button>
                 <button class="nav-btn" id="lockNowBtn" type="button" style="display:none;">🔒 立即锁定</button>
                 <button class="primary-action-btn" id="saveSettingsBtn" type="button" style="display:none;">💾 加密保存</button>
-                <button class="primary-action-btn" id="closeSettingsModalBtn" type="button">关闭</button>
+                <button class="primary-action-btn" id="closeSettingsModalBtn" type="button">关闭 (体验离线功能)</button>
             </div>
         </div>
     </div>
@@ -1619,7 +1653,9 @@
         const unlockMsg = document.getElementById('unlockMsg');
 
         const groupChangePwd = document.getElementById('groupChangePwd');
-        const settingNewPasswordInput = document.getElementById('settingNewPasswordInput');
+        const settingNewAdminPwd = document.getElementById('settingNewAdminPwd');
+        const settingNewReadonlyPwd = document.getElementById('settingNewReadonlyPwd');
+        const groupReadonlyActive = document.getElementById('groupReadonlyActive');
 
         const groupGithubSync = document.getElementById('groupGithubSync');
         const copyCipherBtn = document.getElementById('copyCipherBtn');
@@ -2029,10 +2065,15 @@
             // 安全策略：清除旧的明文缓存，优先从 session 中恢复已解密使用的活动地址
             localStorage.removeItem('llm_base_url');
             const activeUrl = sessionStorage.getItem('llm_active_url');
+            const activeRole = sessionStorage.getItem('llm_user_role');
             if (activeUrl) {
                 window.localLLMClient.baseUrl = activeUrl;
+                isSettingsUnlocked = true;
+                currentUserRole = activeRole || 'readonly';
             } else {
                 window.localLLMClient.baseUrl = '';
+                isSettingsUnlocked = false;
+                currentUserRole = '';
             }
 
             // 初始化静音 UI 状态
@@ -2042,9 +2083,11 @@
             await checkServerStatus();
             initModelInteraction();
 
-            // 打开网页时先弹出大模型配置服务界面
+            // 打开网页时：若未解锁则弹出说明弹窗引导访客
             updateSettingsModalView();
-            settingsDrawer.classList.add('active');
+            if (!activeUrl) {
+                settingsDrawer.classList.add('active');
+            }
         });
 
         function escapeHtml(str) {
@@ -3220,7 +3263,7 @@
                 );
             },
 
-            async encrypt(text, password) {
+            async encryptRaw(text, password) {
                 const salt = crypto.getRandomValues(new Uint8Array(16));
                 const iv = crypto.getRandomValues(new Uint8Array(12));
                 const key = await this.deriveKey(password, salt);
@@ -3230,16 +3273,14 @@
                     key,
                     enc.encode(text)
                 );
-                const payload = {
+                return {
                     salt: Array.from(salt),
                     iv: Array.from(iv),
                     data: Array.from(new Uint8Array(encrypted))
                 };
-                return btoa(JSON.stringify(payload));
             },
 
-            async decrypt(cipherBase64, password) {
-                const payload = JSON.parse(atob(cipherBase64));
+            async decryptRaw(payload, password) {
                 const salt = new Uint8Array(payload.salt);
                 const iv = new Uint8Array(payload.iv);
                 const data = new Uint8Array(payload.data);
@@ -3250,11 +3291,62 @@
                     data
                 );
                 return new TextDecoder().decode(decrypted);
+            },
+
+            async encryptMultiRole(text, adminPassword, readonlyPassword) {
+                const adminPayload = await this.encryptRaw(text, adminPassword);
+                let readonlyPayload = null;
+                if (readonlyPassword) {
+                    readonlyPayload = await this.encryptRaw(text, readonlyPassword);
+                }
+                const finalObj = {
+                    version: 2,
+                    admin: adminPayload,
+                    readonly: readonlyPayload
+                };
+                return btoa(JSON.stringify(finalObj));
+            },
+
+            async decryptMultiRole(cipherBase64, password) {
+                let payload;
+                try {
+                    payload = JSON.parse(atob(cipherBase64));
+                } catch (e) {
+                    return { ok: false, error: '密文解析失败' };
+                }
+
+                if (payload.version === 2) {
+                    // 1. 优先尝试管理密码
+                    if (payload.admin) {
+                        try {
+                            const url = await this.decryptRaw(payload.admin, password);
+                            if (url) return { ok: true, role: 'admin', url };
+                        } catch (e) {}
+                    }
+                    // 2. 尝试访客只读密码
+                    if (payload.readonly) {
+                        try {
+                            const url = await this.decryptRaw(payload.readonly, password);
+                            if (url) return { ok: true, role: 'readonly', url };
+                        } catch (e) {}
+                    }
+                    return { ok: false, error: '密码错误' };
+                } else if (payload.salt && payload.data) {
+                    // 兼容旧版单一密文：验证成功即赋予管理员权限
+                    try {
+                        const url = await this.decryptRaw(payload, password);
+                        if (url) return { ok: true, role: 'admin', url };
+                    } catch (e) {}
+                    return { ok: false, error: '密码错误' };
+                }
+                return { ok: false, error: '密文格式不正确' };
             }
         };
 
         let isSettingsUnlocked = false;
-        let currentSessionPassword = '';
+        let currentUserRole = ''; // 'admin' | 'readonly' | ''
+        let currentSessionAdminPwd = '';
+        let currentSessionReadonlyPwd = '';
 
         function getStoredCipher() {
             return localStorage.getItem('llm_encrypted_payload') || window.REPO_ENCRYPTED_API || '';
@@ -3268,11 +3360,12 @@
 
             if (!hasConfig && !isSettingsUnlocked) {
                 // 首次使用，尚未设置任何配置
+                if (groupReadonlyActive) groupReadonlyActive.style.display = 'none';
                 groupMaskedUrl.style.display = 'none';
                 groupRealUrl.style.display = 'flex';
                 groupUnlockPwd.style.display = 'flex';
-                pwdPromptLabel.innerText = '首次配置：请设置访问密码';
-                settingPasswordInput.placeholder = '请设置访问密码...';
+                pwdPromptLabel.innerText = '首次配置：请设置管理密码';
+                settingPasswordInput.placeholder = '请设置管理密码...';
                 settingPasswordInput.value = '';
                 unlockSettingsBtn.style.display = 'none';
                 unlockMsg.innerHTML = '<span style="color:#38bdf8;">💡 首次设置：请输入 API 地址并设置管理密码，系统将使用 AES-256 加密存储。</span>';
@@ -3281,16 +3374,19 @@
                 lockNowBtn.style.display = 'none';
                 saveSettingsBtn.style.display = 'inline-block';
                 saveSettingsBtn.innerText = '💾 加密保存';
+                resetSettingsBtn.style.display = 'none';
+                closeSettingsModalBtn.innerText = '关闭 (体验离线功能)';
                 settingBaseUrl.value = window.localLLMClient.baseUrl || '';
                 settingBaseUrl.type = 'text';
                 toggleUrlPlainBtn.innerText = '🙈 隐藏明文';
             } else if (!isSettingsUnlocked) {
                 // 已有配置，处于锁定状态
+                if (groupReadonlyActive) groupReadonlyActive.style.display = 'none';
                 groupMaskedUrl.style.display = 'flex';
                 groupRealUrl.style.display = 'none';
                 groupUnlockPwd.style.display = 'flex';
-                pwdPromptLabel.innerText = '输入管理密码以查看或更改';
-                settingPasswordInput.placeholder = '输入密码解锁...';
+                pwdPromptLabel.innerText = '输入访问密码解锁服务';
+                settingPasswordInput.placeholder = '输入管理密码或访客只读密码...';
                 settingPasswordInput.value = '';
                 unlockSettingsBtn.style.display = 'inline-block';
                 unlockMsg.innerText = '';
@@ -3298,24 +3394,45 @@
                 groupGithubSync.style.display = 'none';
                 lockNowBtn.style.display = 'none';
                 saveSettingsBtn.style.display = 'none';
+                resetSettingsBtn.style.display = 'none';
+                closeSettingsModalBtn.innerText = '关闭 (体验离线功能)';
 
                 if (window.localLLMClient.baseUrl) {
-                    maskedStatusHint.innerText = '大模型服务已连接就绪。如需查看明文或更改 API 地址，请输入密码解锁。';
+                    maskedStatusHint.innerText = '大模型服务已连接就绪。输入管理密码可更改配置，或输入只读密码切换。';
                 } else {
                     maskedStatusHint.innerText = 'API 地址已通过 AES-256 加密隐藏，输入密码解锁后方可连接与使用。';
                 }
+            } else if (currentUserRole === 'readonly') {
+                // 访客只读模式已解锁
+                if (groupReadonlyActive) groupReadonlyActive.style.display = 'block';
+                groupMaskedUrl.style.display = 'flex';
+                maskedStatusHint.innerText = '已通过访客只读密码连接服务。敏感接口已受保护，您可正常进行 AI 对话。';
+                groupRealUrl.style.display = 'none';
+                groupUnlockPwd.style.display = 'none';
+                groupChangePwd.style.display = 'none';
+                groupGithubSync.style.display = 'none';
+                lockNowBtn.style.display = 'inline-block';
+                lockNowBtn.innerText = '🔒 退出访客模式';
+                saveSettingsBtn.style.display = 'none';
+                resetSettingsBtn.style.display = 'none';
+                closeSettingsModalBtn.innerText = '关闭 (开始聊天)';
             } else {
-                // 已解锁状态
+                // 管理员模式已解锁 (admin)
+                if (groupReadonlyActive) groupReadonlyActive.style.display = 'none';
                 groupMaskedUrl.style.display = 'none';
                 groupRealUrl.style.display = 'flex';
                 groupUnlockPwd.style.display = 'none';
                 groupChangePwd.style.display = 'flex';
-                settingNewPasswordInput.value = '';
+                if (settingNewAdminPwd) settingNewAdminPwd.value = '';
+                if (settingNewReadonlyPwd) settingNewReadonlyPwd.value = '';
                 groupGithubSync.style.display = 'block';
                 cipherOutputText.value = cipher;
                 lockNowBtn.style.display = 'inline-block';
+                lockNowBtn.innerText = '🔒 锁定管理面板';
                 saveSettingsBtn.style.display = 'inline-block';
                 saveSettingsBtn.innerText = '💾 加密保存';
+                resetSettingsBtn.style.display = 'inline-block';
+                closeSettingsModalBtn.innerText = '关闭';
             }
         }
 
@@ -3323,10 +3440,10 @@
             const cipher = getStoredCipher();
             if (!cipher) return;
 
-            const pwd = settingPasswordInput.value;
+            const pwd = settingPasswordInput.value.trim();
             if (!pwd) {
                 unlockMsg.style.color = '#f87171';
-                unlockMsg.innerText = '请输入管理密码';
+                unlockMsg.innerText = '请输入访问密码';
                 return;
             }
 
@@ -3334,28 +3451,49 @@
             unlockMsg.innerText = '正在验证密码并解密...';
 
             try {
-                const decryptedUrl = await CryptoService.decrypt(cipher, pwd);
-                if (!decryptedUrl) {
-                    throw new Error('解密结果为空');
+                const res = await CryptoService.decryptMultiRole(cipher, pwd);
+                if (!res.ok) {
+                    unlockMsg.style.color = '#f87171';
+                    unlockMsg.innerText = '❌ 密码错误，若无密码请联系作者获取或使用离线功能';
+                    return;
                 }
 
-                currentSessionPassword = pwd;
+                const decryptedUrl = res.url;
                 isSettingsUnlocked = true;
+                currentUserRole = res.role;
+                if (res.role === 'admin') {
+                    currentSessionAdminPwd = pwd;
+                } else {
+                    currentSessionReadonlyPwd = pwd;
+                }
+
                 window.localLLMClient.saveSettings({ baseUrl: decryptedUrl });
                 sessionStorage.setItem('llm_active_url', decryptedUrl);
+                sessionStorage.setItem('llm_user_role', res.role);
 
                 settingBaseUrl.value = decryptedUrl;
                 settingBaseUrl.type = 'password';
                 toggleUrlPlainBtn.innerText = '👁️ 显示明文';
 
                 updateSettingsModalView();
-                testConnResult.style.color = '#34d399';
-                testConnResult.innerText = '✅ 密码正确，已解锁！';
-                await checkServerStatus();
+
+                if (res.role === 'readonly') {
+                    testConnResult.style.color = '#34d399';
+                    testConnResult.innerText = '✅ 访客授权成功！大模型服务已连接';
+                    await checkServerStatus();
+                    // 访客解锁后平滑关闭设置窗口，立即开始对话
+                    setTimeout(() => {
+                        closeDrawer();
+                    }, 1200);
+                } else {
+                    testConnResult.style.color = '#34d399';
+                    testConnResult.innerText = '👑 管理员已解锁，您可自由配置服务与密码！';
+                    await checkServerStatus();
+                }
             } catch (err) {
                 console.warn('Decryption failed:', err);
                 unlockMsg.style.color = '#f87171';
-                unlockMsg.innerText = '❌ 密码错误，无法解锁 API 地址';
+                unlockMsg.innerText = '❌ 解密失败，请检查密码或联系作者';
             }
         }
 
@@ -3398,7 +3536,14 @@
 
         lockNowBtn.addEventListener('click', () => {
             isSettingsUnlocked = false;
+            currentUserRole = '';
+            currentSessionAdminPwd = '';
+            currentSessionReadonlyPwd = '';
+            sessionStorage.removeItem('llm_active_url');
+            sessionStorage.removeItem('llm_user_role');
+            window.localLLMClient.baseUrl = '';
             updateSettingsModalView();
+            checkServerStatus();
         });
 
         saveSettingsBtn.addEventListener('click', async () => {
@@ -3409,43 +3554,76 @@
                 return;
             }
 
-            let pwdToUse = '';
             const cipher = getStoredCipher();
+            let adminPwdToUse = '';
+            let readonlyPwdToUse = '';
+
             if (!cipher) {
-                pwdToUse = settingPasswordInput.value;
-                if (!pwdToUse) {
+                // 首次配置
+                adminPwdToUse = settingPasswordInput.value.trim();
+                if (!adminPwdToUse) {
                     unlockMsg.style.color = '#f87171';
                     unlockMsg.innerText = '首次配置必须设置管理密码！';
                     settingPasswordInput.focus();
                     return;
                 }
+                readonlyPwdToUse = '';
             } else {
-                const newPwd = settingNewPasswordInput.value;
-                pwdToUse = newPwd || currentSessionPassword;
-                if (!pwdToUse) {
+                // 管理员修改配置
+                const typedNewAdmin = settingNewAdminPwd ? settingNewAdminPwd.value.trim() : '';
+                const typedNewReadonly = settingNewReadonlyPwd ? settingNewReadonlyPwd.value.trim() : '';
+
+                adminPwdToUse = typedNewAdmin || currentSessionAdminPwd;
+                if (!adminPwdToUse) {
                     testConnResult.style.color = '#f87171';
                     testConnResult.innerText = '未能获取管理密码，请重新输入密码解锁';
                     return;
                 }
+
+                readonlyPwdToUse = typedNewReadonly || currentSessionReadonlyPwd;
             }
 
             try {
                 testConnResult.style.color = '#38bdf8';
-                testConnResult.innerText = '正在加密保存...';
+                testConnResult.innerText = '正在加密保存配置...';
 
-                const newCipher = await CryptoService.encrypt(rawUrl, pwdToUse);
+                let newCipher = '';
+                // 检查是否需要保留原有的 readonlyPayload
+                if (!readonlyPwdToUse && cipher) {
+                    try {
+                        const parsedOld = JSON.parse(atob(cipher));
+                        if (parsedOld.version === 2 && parsedOld.readonly) {
+                            const adminPayload = await CryptoService.encryptRaw(rawUrl, adminPwdToUse);
+                            const finalObj = {
+                                version: 2,
+                                admin: adminPayload,
+                                readonly: parsedOld.readonly
+                            };
+                            newCipher = btoa(JSON.stringify(finalObj));
+                        }
+                    } catch (e) {}
+                }
+
+                if (!newCipher) {
+                    newCipher = await CryptoService.encryptMultiRole(rawUrl, adminPwdToUse, readonlyPwdToUse);
+                }
+
                 localStorage.setItem('llm_encrypted_payload', newCipher);
                 localStorage.removeItem('llm_base_url');
 
-                currentSessionPassword = pwdToUse;
+                currentSessionAdminPwd = adminPwdToUse;
+                if (readonlyPwdToUse) currentSessionReadonlyPwd = readonlyPwdToUse;
+
                 window.localLLMClient.saveSettings({ baseUrl: rawUrl });
                 sessionStorage.setItem('llm_active_url', rawUrl);
+                sessionStorage.setItem('llm_user_role', 'admin');
 
-                isSettingsUnlocked = false;
+                isSettingsUnlocked = true;
+                currentUserRole = 'admin';
                 updateSettingsModalView();
 
                 testConnResult.style.color = '#34d399';
-                testConnResult.innerText = '✅ API 地址已使用 AES-256 加密保存！';
+                testConnResult.innerText = '✅ API 配置与双权限密码已通过 AES-256 加密保存！';
                 await checkServerStatus();
             } catch (err) {
                 testConnResult.style.color = '#f87171';
@@ -3458,17 +3636,22 @@
             testConnResult.innerText = '正在测试连接中，请稍候...';
 
             if (isSettingsUnlocked) {
-                const url = settingBaseUrl.value.trim();
-                if (!url) {
-                    testConnResult.style.color = '#f87171';
-                    testConnResult.innerText = '模型连接失败，请与作者联系，或使用离线功能。';
-                    return;
+                if (currentUserRole === 'admin') {
+                    const url = settingBaseUrl.value.trim();
+                    if (!url) {
+                        testConnResult.style.color = '#f87171';
+                        testConnResult.innerText = 'API 地址不能为空';
+                        return;
+                    }
+                    window.localLLMClient.saveSettings({ baseUrl: url });
                 }
-                window.localLLMClient.saveSettings({ baseUrl: url });
             } else {
                 if (!window.localLLMClient.baseUrl) {
-                    testConnResult.style.color = '#f87171';
-                    testConnResult.innerText = '模型连接失败，请与作者联系，或使用离线功能。';
+                    testConnResult.style.color = '#f59e0b';
+                    testConnResult.innerText = '🔒 请先在上方输入密码解锁服务；若无密码请联系作者获取，或关闭窗口使用离线功能。';
+                    unlockMsg.style.color = '#f59e0b';
+                    unlockMsg.innerText = '👆 请在此处输入密码解锁服务';
+                    settingPasswordInput.focus();
                     return;
                 }
             }
@@ -3476,15 +3659,11 @@
             const res = await window.localLLMClient.checkHealth();
             if (res.ok) {
                 testConnResult.style.color = '#34d399';
-                testConnResult.innerText = '✅ 模型已连接';
+                testConnResult.innerText = '✅ 模型已连接就绪！';
                 await checkServerStatus();
-                // 连接成功后平滑关闭设置窗口
-                setTimeout(() => {
-                    closeDrawer();
-                }, 1000);
             } else {
                 testConnResult.style.color = '#f87171';
-                testConnResult.innerText = '模型连接失败，请与作者联系，或使用离线功能。';
+                testConnResult.innerText = '模型连接失败，请确认后端服务运行正常，或与作者联系。';
             }
         });
 
@@ -3493,9 +3672,12 @@
             localStorage.removeItem('llm_encrypted_payload');
             localStorage.removeItem('llm_base_url');
             sessionStorage.removeItem('llm_active_url');
+            sessionStorage.removeItem('llm_user_role');
             window.localLLMClient.baseUrl = '';
-            currentSessionPassword = '';
+            currentSessionAdminPwd = '';
+            currentSessionReadonlyPwd = '';
             isSettingsUnlocked = false;
+            currentUserRole = '';
             updateSettingsModalView();
             testConnResult.style.color = '#94a3b8';
             testConnResult.innerText = '已清除所有本地加密配置';
@@ -3506,7 +3688,7 @@
             cipherOutputText.select();
             navigator.clipboard.writeText(cipherOutputText.value).then(() => {
                 const oldText = copyCipherBtn.innerText;
-                copyCipherBtn.innerText = '✅ 已复制！请运行批处理脚本提交';
+                copyCipherBtn.innerText = '✅ 已复制！请运行 sync_api 提交';
                 setTimeout(() => copyCipherBtn.innerText = oldText, 2500);
             });
         });
