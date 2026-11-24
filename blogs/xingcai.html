@@ -1,232 +1,38 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>live2d_星彩</title>
-    <style type="text/css">
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            -webkit-tap-highlight-color: transparent;
-        }
+<html>
+	<head>
+		<title> live2d_星彩 </title>
+		<meta charset="utf-8" />
+		<style type="text/css">
+			.bkg{position:fixed;top: 0;left: 0;width:100%;height:100%;z-index:-10;zoom: 1;
+			      background-image: url('../myimages/background.jpg');background-repeat: no-repeat;background-size: cover;
+			      background-position: center 0;
+			    }
+			.he{text-align:center;font-family:times;color:#FF8000;font-size:150%;z-index:2;}
+			.time{width: 100%;text-align:center;font-family:times;color:gray;font-size:90%;z-index:1;}
+			a{text-decoration:none}
+			.blog{position: absolute;left: 25%;right: 25%;z-index:3;}
+			.footer{position: absolute;bottom:0;left: 0;right: 0;text-align:center;color:white;}
+   			canvas{width: 100vw;height: 100vh;display: block;}
+		</style>
+		<script type="text/javascript" src="<%=basePath%>/js/jquery-1.12.4.js"></script> 
+		<script src="https://unpkg.com/core-js-bundle@3.6.1/minified.js"></script>
+		<script src = "../Core/live2dcubismcore.js"></script>
+		<script type="module" crossorigin src="../assets/index-4PtOunvL.js"></script>
+	</head>
 
-        html, body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Times New Roman", Times, "Songti SC", serif;
-            color: #ffffff;
-            background-color: #0b0f19;
-        }
-
-        .bkg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            height: 100dvh;
-            background-image: url('../myimages/background.jpg');
-            background-repeat: no-repeat;
-            background-size: cover;
-            background-position: center center;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .bkg::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at center, rgba(11, 15, 25, 0.25) 0%, rgba(5, 8, 16, 0.65) 100%);
-            z-index: 0;
-        }
-
-        /* 顶部导航与标题 */
-        .top-navbar {
-            position: fixed;
-            top: max(16px, env(safe-area-inset-top));
-            left: 16px;
-            right: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            z-index: 10;
-            pointer-events: auto;
-        }
-
-        .back-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 7px 16px;
-            border-radius: 999px;
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            border: 1px solid rgba(255, 255, 255, 0.16);
-            color: #f1f5f9;
-            font-size: 14px;
-            text-decoration: none;
-            transition: all 0.22s ease;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-        }
-
-        .back-pill:hover {
-            color: #38bdf8;
-            background: rgba(30, 41, 59, 0.85);
-            transform: translateY(-1px);
-        }
-
-        .back-pill:active {
-            transform: scale(0.96);
-        }
-
-        .header-info {
-            text-align: center;
-            pointer-events: none;
-        }
-
-        .page-title {
-            font-size: clamp(1.4rem, 4vw, 1.8rem);
-            color: #FF8000;
-            letter-spacing: 2px;
-            text-shadow: 0 4px 14px rgba(0, 0, 0, 0.7);
-        }
-
-        .date-badge {
-            font-size: 0.8rem;
-            color: #94a3b8;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: rgba(255, 255, 255, 0.08);
-            padding: 3px 10px;
-            border-radius: 999px;
-            display: inline-block;
-            margin-top: 4px;
-        }
-
-        /* Live2D 画布 */
-        canvas {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            height: 100dvh !important;
-            z-index: 1 !important;
-            display: block !important;
-            pointer-events: auto !important;
-        }
-
-        /* 底部导航栏：玻璃拟态触控卡片 */
-        .bottom-bar {
-            position: fixed;
-            bottom: max(20px, env(safe-area-inset-bottom));
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: center;
-            z-index: 10;
-            pointer-events: auto;
-        }
-
-        .footer-nav {
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            border: 1px solid rgba(255, 255, 255, 0.16);
-            border-radius: 999px;
-            padding: 8px 22px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-        }
-
-        .nav-pill {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 38px;
-            padding: 6px 14px;
-            font-size: 15px;
-            color: #94a3b8;
-            text-decoration: none;
-            letter-spacing: 1px;
-            border-radius: 999px;
-            transition: all 0.22s ease;
-            user-select: none;
-        }
-
-        .nav-pill:hover {
-            color: #38bdf8;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .nav-pill:active {
-            transform: scale(0.95);
-        }
-
-        .nav-divider {
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 14px;
-            user-select: none;
-        }
-
-        @media (max-width: 480px) {
-            .top-navbar {
-                left: 12px;
-                right: 12px;
-            }
-            .back-pill {
-                padding: 6px 12px;
-                font-size: 13px;
-            }
-            .page-title {
-                font-size: 1.25rem;
-            }
-            .footer-nav {
-                padding: 6px 16px;
-                gap: 8px;
-            }
-            .nav-pill {
-                padding: 6px 10px;
-                font-size: 14px;
-            }
-        }
-    </style>
-    <script src="https://unpkg.com/core-js-bundle@3.6.1/minified.js"></script>
-    <script src="../Core/live2dcubismcore.js"></script>
-    <script type="module" crossorigin src="../assets/index-4PtOunvL.js"></script>
-</head>
-
-<body>
-    <div class="bkg"></div>
-
-    <header class="top-navbar">
-        <a href="../study.html" class="back-pill" title="返回笔记目录">
-            <span>←</span> 返回笔记
-        </a>
-        <div class="header-info">
-            <h1 class="page-title">星 彩</h1>
-            <time class="date-badge" datetime="2024-06-06">06/06-2024</time>
-        </div>
-        <div style="width: 80px;"></div>
-    </header>
-
-    <div id="model"></div>
-
-    <div class="bottom-bar">
-        <nav class="footer-nav" aria-label="页面导航">
-            <a href="../daily.html" class="nav-pill">日月之行</a>
-            <span class="nav-divider">|</span>
-            <a href="../study.html" class="nav-pill">天之苍苍</a>
-        </nav>
-    </div>
-</body>
+	<body>
+		<div class="bkg">
+			<a href="../index.html" style="font-style:times;color:white">Yan's Blog</a>
+			<div class="he"><br> 星 彩 <br></div>
+			<div class="time"><br>06/06-2024<br></div>	
+			<div id="model">
+			       <canvas width="250" height="200"></canvas>
+			</div>
+			<div class="footer">
+				<a href="../daily" style="color:white">日月之行</a>&nbsp;&nbsp;&nbsp|&nbsp;&nbsp;&nbsp
+				<a href="../study" style="color:white">天之苍苍</a>
+			</div>
+		</div>
+	</body>
 </html>
